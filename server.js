@@ -60,14 +60,14 @@ const upload = multer({
 });
 
 const dbConfig = {
-  server: "localhost\\SQLEXPRESS02",
+  server: "barberpisql.database.windows.net",
   port: 1433,
   database: "barberPi",
   user: "axelrivera",
-  password: "12345678",
+  password: "12345678Julio",
   options: {
-    encrypt: false,
-    trustServerCertificate: true,
+    encrypt: true,
+    trustServerCertificate: false,
   },
 };
 
