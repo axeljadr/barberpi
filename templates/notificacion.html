@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Barber Studio - Notificaciones</title>
+    <link rel="stylesheet" href="../static/notificacion.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="block">
+        <img
+          class="imagen-de-barberia"
+          src="../images/barber.jpg"
+          alt="Logo Barber Studio"
+        />
+      </div>
+      <nav class="navigation-pill-list" aria-label="Navegación principal">
+        <a href="../templates/perfil.html" class="navigation-pill">
+          <span class="title">Mi Perfil</span>
+        </a>
+        <a href="../templates/home.html" class="navigation-pill">
+          <span class="title">Inicio</span>
+        </a>
+        <a href="../templates/agendar.html" class="navigation-pill">
+          <span class="">Agendar Cita</span>
+        </a>
+        <a href="notificacion.html" class="navigation-pill">
+          <span class="title">Notificaciones</span>
+        </a>
+        <a
+          href="../templates/login.html"
+          class="navigation-pill"
+          id="logout-link"
+        >
+          <span class="title">Cerrar Sesión</span>
+        </a>
+      </nav>
+    </header>
+
+    <main class="main-content">
+      <h1>Mis notificaciones</h1>
+      <div class="notifications-container">
+        <!-- Aquí se inyectan las tarjetas dinámicamente -->
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-logo">
+        <img
+          class="imagen-de-barberia"
+          src="../images/barber.jpg"
+          alt="Barber Studio Logo"
+        />
+      </div>
+      <nav class="text-link-list" aria-labelledby="footer-contact">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-contact" class="text-strong">
+            <span class="text-strong-2">contacto</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a href="tel:9837324637" class="list-item">9837324637</a>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:barberpi@utttn.mx" class="list-item-2"
+              >barberpi@utttn.mx</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-location">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-location" class="text-strong">
+            <span class="text-strong-2">ubicación</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a
+              href="https://maps.app.goo.gl/ZD5gur5vPiwKMVCW9?g_st=iw"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="list-item-7"
+              >google.maps/micasa</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-creator">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-creator" class="text-strong">
+            <span class="">creado por:</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <span class="list-item-11">Axel Rivera</span>
+          </li>
+          <li class="text-link-list-item">
+            <span class="list-item-12">contactos:</span>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:axel.delgado@uttn.mx" class="list-item-13"
+              >axel.delgado@uttn.mx</a
+            >
+          </li>
+          <li class="text-link-list-item">
+            <a href="tel:8994287620" class="list-item">8994287620</a>
+          </li>
+        </ul>
+      </nav>
+    </footer>
+
+    <script>
+      const API_BASE = "http://localhost:4000/api"; // ajusta si usas otro path
+
+      function getToken() {
+        return localStorage.getItem("token");
+      }
+
+      function getRol() {
+        return localStorage.getItem("rol"); // asumiendo que guardas el rol en LS
+      }
+
+      function logout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("rol");
+        localStorage.removeItem("nombre");
+        // lo que más tengas
+        window.location.href = "../templates/login.html";
+      }
+
+      document
+        .getElementById("logout-link")
+        .addEventListener("click", function (e) {
+          e.preventDefault();
+          logout();
+        });
+
+      function formatearFecha(fechaValor) {
+        if (!fechaValor) return "";
+
+        // Si viene como objeto Date
+        if (fechaValor instanceof Date) {
+          if (Number.isNaN(fechaValor.getTime())) return "";
+          return fechaValor.toLocaleDateString("es-ES", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+        }
+
+        // Si viene como string (lo más habitual desde la API)
+        let str = String(fechaValor);
+
+        // Si viene con hora (YYYY-MM-DDTHH:MM:SSZ), nos quedamos solo con la fecha
+        if (str.includes("T")) {
+          str = str.split("T")[0];
+        }
+
+        // Si está en formato YYYY-MM-DD la parseamos a mano
+        const partes = str.split("-");
+        if (partes.length === 3) {
+          const [y, m, d] = partes.map(Number);
+          if (!Number.isNaN(y) && !Number.isNaN(m) && !Number.isNaN(d)) {
+            const fechaLocal = new Date(y, m - 1, d); // sin zona horaria problemática
+            if (!Number.isNaN(fechaLocal.getTime())) {
+              return fechaLocal.toLocaleDateString("es-ES", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              });
+            }
+          }
+        }
+
+        // Si no pudimos formatear, devolvemos el string tal cual
+        return str;
+      }
+
+      function formatearHora(horaStr) {
+        if (!horaStr) return "";
+        const [h, m] = horaStr.split(":");
+        const d = new Date();
+        d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+        return d.toLocaleTimeString("es-ES", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      async function verificarSesionYRol() {
+        const token = getToken();
+        const rol = getRol();
+
+        if (!token) {
+          alert("Debes iniciar sesión para ver tus notificaciones.");
+          window.location.href = "../templates/login.html";
+          return false;
+        }
+
+        // seguridad básica en front: solo clientes
+        if (rol && rol !== "cliente") {
+          alert("Solo los clientes pueden ver esta página de notificaciones.");
+          window.location.href = "../templates/home.html";
+          return false;
+        }
+
+        return true;
+      }
+
+      async function cargarNotificaciones() {
+        const ok = await verificarSesionYRol();
+        if (!ok) return;
+
+        const token = getToken();
+
+        try {
+          const resp = await fetch(`${API_BASE}/notificaciones-cliente`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (resp.status === 401 || resp.status === 403) {
+            alert("Sesión no válida. Inicia sesión de nuevo.");
+            logout();
+            return;
+          }
+
+          if (!resp.ok) {
+            const errData = await resp.json().catch(() => ({}));
+            console.error("Error backend:", errData);
+            alert("Error al obtener notificaciones.");
+            return;
+          }
+
+          const notifs = await resp.json();
+          renderNotificaciones(notifs);
+        } catch (err) {
+          console.error("Error al cargar notificaciones:", err);
+          alert("Error de conexión con el servidor.");
+        }
+      }
+
+      function renderNotificaciones(notifs) {
+        const container = document.querySelector(".notifications-container");
+        container.innerHTML = "";
+
+        if (!notifs || notifs.length === 0) {
+          const empty = document.createElement("p");
+          empty.textContent = "No tienes notificaciones pendientes.";
+          container.appendChild(empty);
+          return;
+        }
+
+        notifs.forEach((n) => {
+          if (n.tipo === "recordatorio_un_dia_antes") {
+            container.appendChild(crearCardRecordatorioUnDiaAntes(n));
+          } else if (n.tipo === "ultima_hace_mes") {
+            container.appendChild(crearCardUltimaHaceMes(n));
+          } else if (n.tipo === "proxima_cita") {
+            container.appendChild(crearCardProximaCita(n));
+          }
+        });
+      }
+
+      function crearCardRecordatorioUnDiaAntes(n) {
+        const card = document.createElement("div");
+        card.className = "notification-card";
+
+        const fecha = formatearFecha(n.fecha);
+        const hora = formatearHora(n.hora);
+
+        card.innerHTML = `
+          <h2 class="notification-title">Recordatorio de cita (mañana)</h2>
+          <p class="notification-message">
+            Tu siguiente cita es mañana (${fecha}) a las ${hora}. ¿Confirmas tu asistencia?
+          </p>
+          <div class="notification-actions">
+            <button class="btn btn-primary">Confirmar</button>
+            <button class="btn btn-danger">Negar</button>
+            <button class="btn btn-secondary">Reagendar</button>
+          </div>
+        `;
+
+        const [btnConfirmar, btnNegar, btnReagendar] =
+          card.querySelectorAll("button");
+
+        btnConfirmar.addEventListener("click", () =>
+          confirmarCita(n.id_cita, card)
+        );
+        btnNegar.addEventListener("click", () => cancelarCita(n.id_cita, card));
+        btnReagendar.addEventListener("click", () => reagendarCita(n.id_cita));
+
+        return card;
+      }
+
+      function crearCardUltimaHaceMes(n) {
+        const card = document.createElement("div");
+        card.className = "notification-card";
+
+        const fecha = formatearFecha(n.fecha);
+
+        card.innerHTML = `
+          <h2 class="notification-title">Tu última visita</h2>
+          <p class="notification-message">
+            Tu última cita fue el ${fecha}. ¡Ya pasó más de un mes!
+          </p>
+          <div class="notification-actions">
+            <button class="btn btn-primary">Aceptar</button>
+            <button class="btn btn-secondary">Agendar</button>
+          </div>
+        `;
+
+        const [btnAceptar, btnAgendar] = card.querySelectorAll("button");
+
+        btnAceptar.addEventListener("click", () => {
+          card.remove();
+        });
+
+        btnAgendar.addEventListener("click", () => {
+          window.location.href = "../templates/agendar.html";
+        });
+
+        return card;
+      }
+
+      function crearCardProximaCita(n) {
+        const card = document.createElement("div");
+        card.className = "notification-card";
+
+        const fecha = formatearFecha(n.fecha);
+        const hora = formatearHora(n.hora);
+
+        card.innerHTML = `
+          <h2 class="notification-title">Próxima cita</h2>
+          <p class="notification-message">
+            Tu próxima cita es el ${fecha} a las ${hora}.
+          </p>
+          <div class="notification-actions">
+            <button class="btn btn-primary">Confirmar</button>
+            <button class="btn btn-danger">Cancelar</button>
+            <button class="btn btn-secondary">Reagendar</button>
+          </div>
+        `;
+
+        const [btnConfirmar, btnLiberar, btnReagendar] =
+          card.querySelectorAll("button");
+
+        btnConfirmar.addEventListener("click", () =>
+          confirmarCita(n.id_cita, card)
+        );
+        btnLiberar.addEventListener("click", () =>
+          cancelarCita(n.id_cita, card)
+        );
+        btnReagendar.addEventListener("click", () => reagendarCita(n.id_cita));
+
+        return card;
+      }
+
+      async function confirmarCita(id_cita, card) {
+        const token = getToken();
+        try {
+          const resp = await fetch(`${API_BASE}/citas/${id_cita}/confirmar`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+          if (!resp.ok) {
+            const data = await resp.json().catch(() => ({}));
+            alert(data.error || "Error al confirmar cita.");
+            return;
+          }
+          alert("Cita confirmada.");
+          if (card) card.remove();
+        } catch (err) {
+          console.error("Error al confirmar cita:", err);
+          alert("Error de conexión.");
+        }
+      }
+
+      async function cancelarCita(id_cita, card) {
+        const token = getToken();
+        try {
+          const resp = await fetch(`${API_BASE}/citas/${id_cita}/cancelar`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+          if (!resp.ok) {
+            const data = await resp.json().catch(() => ({}));
+            alert(data.error || "Error al cancelar cita.");
+            return;
+          }
+          alert("Cita cancelada.");
+          if (card) card.remove();
+        } catch (err) {
+          console.error("Error al cancelar cita:", err);
+          alert("Error de conexión.");
+        }
+      }
+
+      async function reagendarCita(id_cita) {
+        const token = getToken();
+        try {
+          const resp = await fetch(`${API_BASE}/citas/${id_cita}/reagendar`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+          if (!resp.ok) {
+            const data = await resp.json().catch(() => ({}));
+            alert(data.error || "Error al preparar reagenda.");
+            return;
+          }
+          // La cita se marca como cancelada/liberada en backend.
+          window.location.href = "../templates/agendar.html";
+        } catch (err) {
+          console.error("Error al reagendar cita:", err);
+          alert("Error de conexión.");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", cargarNotificaciones);
+    </script>
+  </body>
+</html>

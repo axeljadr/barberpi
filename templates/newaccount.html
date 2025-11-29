@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crear Cuenta - BarberPi</title>
+    <link rel="stylesheet" href="../static/newaccount.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>🪒 BarberPi</h1>
+      <h2>Crear Nueva Cuenta</h2>
+
+      <div id="alert" class="alert"></div>
+
+      <form id="formRegistro">
+        <input
+          type="text"
+          name="nombre"
+          placeholder="Nombre completo"
+          required
+        />
+        <input type="email" name="email" placeholder="Email" required />
+        <input
+          type="password"
+          name="contraseña"
+          placeholder="Contraseña"
+          required
+        />
+        <button type="submit">Crear cuenta</button>
+      </form>
+
+      <div class="link">
+        <p>¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a></p>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById("formRegistro");
+      const alertBox = document.getElementById("alert");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault(); // evita recargar la página
+
+        // Obtener los valores del formulario
+        const nombre = form.nombre.value.trim();
+        const email = form.email.value.trim();
+        const contraseña = form.contraseña.value.trim();
+
+        // Validaciones rápidas en frontend
+        if (!nombre || !email || !contraseña) {
+          mostrarAlerta("Por favor completa todos los campos.", "error");
+          return;
+        }
+
+        if (contraseña.length < 8) {
+          mostrarAlerta(
+            "La contraseña debe tener al menos 8 caracteres.",
+            "error"
+          );
+          return;
+        }
+
+        try {
+          // Enviar datos al backend
+          const response = await fetch(
+            "http://localhost:4000/api/auth/registro",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ nombre, email, contraseña }),
+            }
+          );
+
+          const data = await response.json();
+
+          if (response.ok) {
+            mostrarAlerta(
+              data.mensaje || "Cuenta creada correctamente 🎉",
+              "success"
+            );
+
+            // Redirigir al login luego de 2 segundos
+            setTimeout(() => {
+              window.location.href = "login.html";
+            }, 2000);
+          } else {
+            mostrarAlerta(
+              data.error || "Ocurrió un error al crear cuenta",
+              "error"
+            );
+          }
+        } catch (err) {
+          mostrarAlerta("Error de conexión con el servidor 😓", "error");
+          console.error("Error:", err);
+        }
+      });
+
+      // Función para mostrar mensajes
+      function mostrarAlerta(mensaje, tipo) {
+        alertBox.textContent = mensaje;
+        alertBox.className = `alert ${tipo}`;
+        alertBox.style.display = "block";
+      }
+    </script>
+  </body>
+</html>

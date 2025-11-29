@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Barber Studio - Inicio Cliente</title>
+    <link rel="stylesheet" href="../static/home.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="block">
+        <img
+          class="imagen-de-barberia"
+          src="../images/barber.jpg"
+          alt="Logo Barber Studio"
+        />
+      </div>
+      <nav class="navigation-pill-list" aria-label="Navegación principal">
+        <a href="../templates/perfil.html" class="navigation-pill">
+          <span class="title">Mi Perfil</span>
+        </a>
+        <a href="../templates/home.html" class="navigation-pill">
+          <span class="title">Inicio</span>
+        </a>
+        <a href="../templates/agendar.html" class="navigation-pill">
+          <span class="title">Agendar Cita</span>
+        </a>
+        <a href="../templates/notificacion.html" class="navigation-pill">
+          <span class="title">Notificaciones</span>
+        </a>
+        <a
+          href="../templates/login.html"
+          class="navigation-pill"
+          id="logout-link"
+        >
+          <span class="title">Cerrar Sesión</span>
+        </a>
+      </nav>
+    </header>
+    <main class="main-content">
+      <!-- Mensajes del barbero si los usas -->
+      <section class="messages-section">
+        <h2 class="section-title">Mensajes de tu barbero</h2>
+        <div class="messages-container" id="messages-container">
+          <!-- luego conectamos esto si quieres -->
+        </div>
+      </section>
+
+      <!-- CARRUSEL 1: Ivan Barber -->
+      <section class="carousel-section">
+        <h2 class="section-title">Trabajos de Ivan Barber</h2>
+        <div class="carousel-container" id="ivan-carousel">
+          <button class="carousel-btn" id="ivan-prev">←</button>
+          <div class="carousel-viewport">
+            <div class="carousel-track" id="ivan-track"></div>
+          </div>
+          <button class="carousel-btn" id="ivan-next">→</button>
+        </div>
+        <div class="carousel-dots" id="ivan-dots"></div>
+      </section>
+
+      <!-- CARRUSEL 2: Referencia de internet -->
+      <section class="carousel-section">
+        <h2 class="section-title">Referencias de internet</h2>
+        <div class="carousel-container" id="ref-carousel">
+          <button class="carousel-btn" id="ref-prev">←</button>
+          <div class="carousel-viewport">
+            <div class="carousel-track" id="ref-track"></div>
+          </div>
+          <button class="carousel-btn" id="ref-next">→</button>
+        </div>
+        <div class="carousel-dots" id="ref-dots"></div>
+      </section>
+
+      <!-- CARRUSEL 3: Otros barberos -->
+      <section class="carousel-section">
+        <h2 class="section-title">Otros barberos</h2>
+        <div class="carousel-container" id="otros-carousel">
+          <button class="carousel-btn" id="otros-prev">←</button>
+          <div class="carousel-viewport">
+            <div class="carousel-track" id="otros-track"></div>
+          </div>
+          <button class="carousel-btn" id="otros-next">→</button>
+        </div>
+        <div class="carousel-dots" id="otros-dots"></div>
+      </section>
+
+      <!-- CARRUSEL 4: Historial (TOP 40) -->
+      <section class="carousel-section">
+        <h2 class="section-title">Historial de trabajos (últimos 40)</h2>
+        <div class="carousel-container" id="hist-carousel">
+          <button class="carousel-btn" id="hist-prev">←</button>
+          <div class="carousel-viewport">
+            <div class="carousel-track" id="hist-track"></div>
+          </div>
+          <button class="carousel-btn" id="hist-next">→</button>
+        </div>
+        <div class="carousel-dots" id="hist-dots"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-logo">
+        <img
+          class="imagen-de-barberia"
+          src="../images/barber.jpg"
+          alt="Barber Studio Logo"
+        />
+      </div>
+      <nav class="text-link-list" aria-labelledby="footer-contact">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-contact" class="text-strong">
+            <span class="text-strong-2">contacto</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a href="tel:9837324637" class="list-item">9837324637</a>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:barberpi@utttn.mx" class="list-item-2"
+              >barberpi@utttn.mx</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-location">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-location" class="text-strong">
+            <span class="text-strong-2">ubicación</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a
+              href="https://maps.app.goo.gl/ZD5gur5vPiwKMVCW9?g_st=iw"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="list-item-7"
+              >google.maps/micasa</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-creator">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-creator" class="text-strong">
+            <span class="">creado por:</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <span class="list-item-11">Axel Rivera</span>
+          </li>
+          <li class="text-link-list-item">
+            <span class="list-item-12">contactos:</span>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:axel.delgado@uttn.mx" class="list-item-13"
+              >axel.delgado@uttn.mx</a
+            >
+          </li>
+          <li class="text-link-list-item">
+            <a href="tel:8994287620" class="list-item">8994287620</a>
+          </li>
+        </ul>
+      </nav>
+    </footer>
+    <script>
+      const API_AUTH = "http://localhost:4000/api/auth";
+      const API_CATALOG = "http://localhost:4000/api/catalogo";
+      const API_MENSAJES_PUBLIC = "http://localhost:4000/api/mensajes/publico";
+
+      function getToken() {
+        return localStorage.getItem("token");
+      }
+      function getRol() {
+        return localStorage.getItem("rol");
+      }
+
+      function redirigirSegunRol(rol) {
+        switch (rol) {
+          case "barbero":
+          case "admin":
+            window.location.href = "/barberpi/templates/homebarber.html";
+            break;
+          case "cliente":
+          default:
+            window.location.href = "/barberpi/templates/home.html";
+            break;
+        }
+      }
+
+      // Estado de cada carrusel
+      const carousels = {
+        ivan: null,
+        ref: null,
+        otros: null,
+        hist: null,
+      };
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        const token = getToken();
+        const rol = getRol();
+
+        if (!token) {
+          alert("Debes iniciar sesión");
+          window.location.href = "/barberpi/templates/login.html";
+          return;
+        }
+
+        if (rol !== "cliente") {
+          redirigirSegunRol(rol);
+          return;
+        }
+
+        // (Opcional) validar sesión
+        try {
+          const resp = await fetch(`${API_AUTH}/perfil`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (resp.status === 401) {
+            alert("Sesión expirada. Vuelve a iniciar sesión.");
+            localStorage.removeItem("token");
+            localStorage.removeItem("rol");
+            window.location.href = "/barberpi/templates/login.html";
+            return;
+          }
+        } catch (e) {
+          console.error("Error al obtener perfil", e);
+        }
+
+        await cargarMensajesCliente();
+        await Promise.all([
+          cargarCarruselPorBarbero("ivan", "Ivan Barber", token),
+          cargarCarruselPorBarbero("ref", "Referencia de internet", token),
+          cargarCarruselPorBarbero("otros", "Otro barbero", token),
+          cargarCarruselHistorial("hist", token),
+        ]);
+      });
+
+      // =========================
+      //  Cargar datos
+      // =========================
+      async function cargarMensajesCliente() {
+        const token = getToken();
+        const container = document.getElementById("messages-container");
+        container.innerHTML = "<p>Cargando mensajes...</p>";
+
+        try {
+          const resp = await fetch(API_MENSAJES_PUBLIC, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!resp.ok) {
+            const text = await resp.text();
+            console.error("Error mensajes cliente:", resp.status, text);
+            container.innerHTML =
+              "<p>No se pudieron cargar los mensajes en este momento.</p>";
+            return;
+          }
+
+          const mensajes = await resp.json();
+          container.innerHTML = "";
+
+          if (!mensajes.length) {
+            container.innerHTML = "<p>No hay mensajes disponibles.</p>";
+            return;
+          }
+
+          mensajes.forEach((m) => {
+            const card = document.createElement("div");
+            card.className = "catalog-card"; // reciclamos estilos
+
+            const fecha = m.creado_en
+              ? new Date(m.creado_en).toLocaleDateString("es-ES", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+              : "";
+
+            const tipoLabel =
+              m.tipo === "ocupado"
+                ? "Estado: Ocupado"
+                : m.tipo === "trabajando"
+                ? "Estado: Trabajando"
+                : "Información";
+
+            card.innerHTML = `
+        <div class="catalog-info">
+          <p class="catalog-description">${m.mensaje}</p>
+          <p class="catalog-date">
+            ${m.nombre_barber ? m.nombre_barber + " · " : ""}${tipoLabel}${
+              fecha ? " · " + fecha : ""
+            }
+          </p>
+        </div>
+      `;
+            container.appendChild(card);
+          });
+        } catch (err) {
+          console.error("Error conexión mensajes cliente:", err);
+          container.innerHTML =
+            "<p>Error de conexión al cargar los mensajes.</p>";
+        }
+      }
+      async function cargarCarruselPorBarbero(key, nombreBarber, token) {
+        const track = document.getElementById(`${key}-track`);
+        const dots = document.getElementById(`${key}-dots`);
+
+        track.innerHTML = "<p>Cargando trabajos...</p>";
+        dots.innerHTML = "";
+
+        try {
+          const url = `${API_CATALOG}/por-barber?nombre_barber=${encodeURIComponent(
+            nombreBarber
+          )}`;
+          const resp = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!resp.ok) {
+            const text = await resp.text();
+            console.error(`Error carrusel ${key}: status=${resp.status}`, text);
+            track.innerHTML = "<p>No se pudieron cargar los trabajos.</p>";
+            track.innerHTML = `<p>Error ${resp.status}: ${text}</p>`;
+            return;
+          }
+
+          const data = await resp.json();
+          track.innerHTML = "";
+
+          if (!data.length) {
+            track.innerHTML =
+              "<p>No hay trabajos disponibles para esta categoría.</p>";
+            return;
+          }
+
+          data.forEach((item) => track.appendChild(crearCard(item)));
+
+          initCarousel(key);
+        } catch (err) {
+          console.error(`Error cargando carrusel ${key}:`, err);
+          track.innerHTML =
+            "<p>Error de conexión al cargar los trabajos. Intenta más tarde.</p>";
+        }
+      }
+
+      async function cargarCarruselHistorial(key, token) {
+        const track = document.getElementById(`${key}-track`);
+        const dots = document.getElementById(`${key}-dots`);
+
+        track.innerHTML = "<p>Cargando historial...</p>";
+        dots.innerHTML = "";
+
+        try {
+          const resp = await fetch(`${API_CATALOG}/historial`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!resp.ok) {
+            track.innerHTML = "<p>No se pudo cargar el historial.</p>";
+            return;
+          }
+
+          const data = await resp.json();
+          track.innerHTML = "";
+
+          if (!data.length) {
+            track.innerHTML = "<p>No hay trabajos en el historial.</p>";
+            return;
+          }
+
+          data.forEach((item) => track.appendChild(crearCard(item)));
+
+          initCarousel(key);
+        } catch (err) {
+          console.error("Error cargando historial:", err);
+          track.innerHTML =
+            "<p>Error de conexión al cargar el historial. Intenta más tarde.</p>";
+        }
+      }
+
+      // =========================
+      //  Creación de tarjetas
+      // =========================
+
+      function crearCard(item) {
+        const card = document.createElement("div");
+        card.className = "carousel-card";
+
+        const titulo = item.nombre || "Trabajo";
+        const desc = item.descripcion || "";
+        const barber = item.nombre_barber || "";
+        let fecha = "";
+        if (item.fecha_subida) {
+          const d = new Date(item.fecha_subida);
+          if (!isNaN(d)) {
+            fecha = d.toLocaleDateString("es-ES", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            });
+          }
+        }
+
+        card.innerHTML = `
+      <img src="http://localhost:4000${
+        item.url_imagen
+      }" alt="${titulo}" class="carousel-image">
+      <div class="carousel-info">
+        <h3 class="carousel-name">${titulo}</h3>
+        <p class="carousel-description">${desc}</p>
+        ${
+          barber || fecha
+            ? `<p class="carousel-description" style="margin-top:0.4rem; font-size:0.85rem; color:#888;">
+                 ${barber ? "Barbero: " + barber : ""}${
+                barber && fecha ? " · " : ""
+              }${fecha ? fecha : ""}
+               </p>`
+            : ""
+        }
+      </div>
+    `;
+
+        return card;
+      }
+
+      // =========================
+      //  Lógica de carrusel
+      // =========================
+
+      function initCarousel(key) {
+        const track = document.getElementById(`${key}-track`);
+        const cards = Array.from(track.querySelectorAll(".carousel-card"));
+        const dotsContainer = document.getElementById(`${key}-dots`);
+
+        if (!cards.length) return;
+
+        const viewport = track.parentElement; // .carousel-viewport
+        const viewportWidth = viewport.clientWidth || 300;
+        const sample = cards[0];
+        const style = getComputedStyle(sample);
+
+        const cardWidth =
+          sample.offsetWidth +
+          parseFloat(style.marginLeft) +
+          parseFloat(style.marginRight);
+
+        const cardsPerSlide = Math.max(
+          1,
+          Math.floor(viewportWidth / cardWidth)
+        );
+        const totalSlides = Math.ceil(cards.length / cardsPerSlide);
+
+        carousels[key] = {
+          currentIndex: 0,
+          totalSlides,
+          cardsPerSlide,
+          cardWidth,
+        };
+
+        // Crear dots
+        dotsContainer.innerHTML = "";
+        for (let i = 0; i < totalSlides; i++) {
+          const dot = document.createElement("button");
+          dot.type = "button";
+          dot.className = "carousel-dot" + (i === 0 ? " active" : "");
+          dot.addEventListener("click", () => moveToSlide(key, i));
+          dotsContainer.appendChild(dot);
+        }
+
+        // Botones
+        const prevBtn = document.getElementById(`${key}-prev`);
+        const nextBtn = document.getElementById(`${key}-next`);
+
+        prevBtn.onclick = () => moveCarousel(key, -1);
+        nextBtn.onclick = () => moveCarousel(key, 1);
+
+        moveToSlide(key, 0);
+      }
+
+      function moveCarousel(key, direction) {
+        const c = carousels[key];
+        if (!c) return;
+
+        let next = c.currentIndex + direction;
+        if (next < 0) next = 0;
+        if (next >= c.totalSlides) next = c.totalSlides - 1;
+
+        moveToSlide(key, next);
+      }
+
+      function moveToSlide(key, slideIndex) {
+        const c = carousels[key];
+        if (!c) return;
+
+        const track = document.getElementById(`${key}-track`);
+        const dots = Array.from(
+          document.querySelectorAll(`#${key}-dots .carousel-dot`)
+        );
+
+        c.currentIndex = slideIndex;
+
+        const offset = -slideIndex * c.cardsPerSlide * c.cardWidth;
+        track.style.transform = `translateX(${offset}px)`;
+
+        dots.forEach((d, i) => d.classList.toggle("active", i === slideIndex));
+
+        const prevBtn = document.getElementById(`${key}-prev`);
+        const nextBtn = document.getElementById(`${key}-next`);
+
+        prevBtn.disabled = slideIndex === 0;
+        nextBtn.disabled = slideIndex === c.totalSlides - 1;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,205 @@
+/* Estilos generales */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background-color: #f5f5f5;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  background-color: #222;
+  color: white;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.imagen-de-barberia {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.navigation-pill-list {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.navigation-pill {
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  background-color: #444;
+  transition: background-color 0.3s;
+}
+
+.navigation-pill:hover {
+  background-color: #666;
+}
+
+/* Contenido principal */
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.notifications-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.notification-card {
+  background-color: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.notification-title {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  text-transform: lowercase;
+}
+
+.notification-message {
+  margin-bottom: 1rem;
+  color: #555;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.btn-primary {
+  background-color: #222;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.btn-secondary {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background-color: #9d9d9d;
+}
+
+.btn-danger {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #9d190a;
+}
+
+/* Footer */
+.footer {
+  background-color: #222;
+  color: white;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.footer-logo {
+  flex: 1;
+  min-width: 200px;
+}
+
+.text-link-list {
+  flex: 1;
+  min-width: 200px;
+}
+
+.text-strong-wrapper {
+  margin-bottom: 1rem;
+}
+
+.text-strong {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.text-strong-2 {
+  text-transform: lowercase;
+}
+
+.footer-list {
+  list-style: none;
+}
+
+.text-link-list-item {
+  margin-bottom: 0.5rem;
+}
+
+.list-item,
+.list-item-2,
+.list-item-7,
+.list-item-11,
+.list-item-12,
+.list-item-13 {
+  color: white;
+  text-decoration: none;
+}
+
+.list-item:hover,
+.list-item-2:hover,
+.list-item-7:hover,
+.list-item-13:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navigation-pill-list {
+    margin-top: 1rem;
+  }
+
+  .footer {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}

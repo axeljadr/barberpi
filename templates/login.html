@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>login page</title>
+    <link rel="stylesheet" href="../static/login.css" />
+  </head>
+  <body>
+    <div class="card">
+      <img class="img" src="../images/barber.jpg" width="130px" />
+      <h2>Login</h2>
+
+      <form id="login-form">
+        <input
+          type="email"
+          name="email"
+          id="email"
+          placeholder="email"
+          required
+        />
+        <input
+          type="password"
+          name="password"
+          id="password"
+          placeholder="password"
+          required
+        />
+        <div class="divider"></div>
+        <div class="create-account">
+          <button type="button" class="create-button">
+            <a href="../templates/newaccount.html">crear cuenta nueva</a>
+          </button>
+        </div>
+        <button type="submit">Login</button>
+      </form>
+    </div>
+    <script>
+      const API_URL = "http://localhost:4000/api/auth";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("login-form");
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const email = document.getElementById("email").value;
+          const contraseña = document.getElementById("password").value;
+
+          try {
+            const resp = await fetch(`${API_URL}/login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, contraseña }),
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok) {
+              alert(data.error || "Error al iniciar sesión");
+              return;
+            }
+
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("rol", data.usuario.rol);
+
+            redirigirSegunRol(data.usuario.rol);
+          } catch (err) {
+            console.error(err);
+            alert("Error de conexión");
+          }
+        });
+      });
+
+      function redirigirSegunRol(rol) {
+        switch (rol) {
+          case "barbero":
+          case "admin":
+            window.location.href = "homebarber.html";
+            break;
+          case "cliente":
+          default:
+            window.location.href = "home.html";
+            break;
+        }
+      }
+    </script>
+  </body>
+</html>

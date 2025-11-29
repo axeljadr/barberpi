@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../static/barbera.css" />
+    <title>Agenda</title>
+  </head>
+  <body>
+    <header class="header">
+      <div class="block">
+        <img
+          class="imagen-de-barberia"
+          src="../images/barber.jpg"
+          alt="Logo Barber Studio"
+        />
+      </div>
+      <nav class="navigation-pill-list" aria-label="Navegación principal">
+        <a href="../templates/perfil.html" class="navigation-pill">
+          <span class="title">Mi Perfil</span>
+        </a>
+        <a href="../templates/homebarber.html" class="navigation-pill">
+          <span class="title">Inicio</span>
+        </a>
+        <a href="../templates/barber_agenda.html" class="navigation-pill">
+          <span class="">Agenda</span>
+        </a>
+        <a href="../templates/notibarbero.html" class="navigation-pill">
+          <span class="title">Notificaciones</span>
+        </a>
+        <a href="../templates/login.html" class="navigation-pill">
+          <span class="title">Cerrar Sesión</span>
+        </a>
+      </nav>
+    </header>
+
+    <main class="main-content">
+      <div class="calendar-header">
+        <h1 class="calendar-title" id="current-month">Noviembre 2025</h1>
+        <div class="calendar-nav">
+          <button class="btn btn-secondary" id="prev-month">
+            ← Mes Anterior
+          </button>
+          <button class="btn btn-secondary" id="today">Hoy</button>
+          <button class="btn btn-secondary" id="next-month">
+            Mes Siguiente →
+          </button>
+          <button class="btn btn-primary" id="edit-schedule">
+            Modificar Horarios
+          </button>
+        </div>
+      </div>
+
+      <div class="calendar-container">
+        <div class="calendar-grid" id="calendar">
+          <!-- Los días se generarán con JavaScript -->
+        </div>
+      </div>
+
+      <div class="day-schedule" id="day-schedule">
+        <h2 class="schedule-title" id="selected-day">
+          Selecciona un día para ver la agenda
+        </h2>
+        <p id="available-slots-text"></p>
+        <ul id="available-slots-list"></ul>
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Estado</th>
+              <th>Cliente</th>
+              <th>Servicio</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="schedule-body">
+            <!-- Las filas se generarán con JavaScript -->
+          </tbody>
+        </table>
+        <div class="action-buttons">
+          <button class="btn btn-success" id="mark-working">
+            Marcar como Trabajando
+          </button>
+          <button class="btn btn-warning" id="mark-busy">
+            Marcar como Ocupado
+          </button>
+          <button class="btn btn-primary" id="add-custom">
+            Agregar Mensaje Personalizado
+          </button>
+          <!-- Botón para abrir modal -->
+          <button id="open-servicios-modal" class="btn btn-secondary">
+            Gestionar Servicios
+          </button>
+
+          <div id="servicios-modal" class="modal" style="display: none">
+            <div class="modal-content">
+              <h3>Servicios</h3>
+              <table id="servicios-table" class="table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Precio</th>
+                    <th>Activo</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+
+              <h4>Agregar / Editar servicio</h4>
+              <input type="hidden" id="serv-id" />
+              <div>
+                <label>Nombre</label>
+                <input type="text" id="serv-nombre" />
+              </div>
+              <div>
+                <label>Precio</label>
+                <input type="number" id="serv-precio" step="0.01" />
+              </div>
+              <div>
+                <label>
+                  <input type="checkbox" id="serv-activo" checked />
+                  Activo
+                </label>
+              </div>
+              <button id="save-servicio">Guardar</button>
+              <button id="close-servicios-modal">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal para modificar horarios -->
+    <div class="modal" id="schedule-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Modificar Horarios de Trabajo</h2>
+          <button class="close-modal" id="close-modal">&times;</button>
+        </div>
+        <form id="schedule-form">
+          <div class="form-group full-width">
+            <p>
+              Establece los horarios de atención para cada día de la semana. Los
+              horarios por defecto son:
+            </p>
+            <ul>
+              <li>Lunes a Jueves: 5:30 PM - 8:00 PM</li>
+              <li>Viernes: Cerrado</li>
+              <li>Sábado: 2:00 PM - 7:00 PM</li>
+              <li>Domingo: 9:00 AM - 9:00 PM</li>
+            </ul>
+          </div>
+
+          <div class="form-group full-width">
+            <h3>Lunes a Jueves</h3>
+            <div class="day-checkbox">
+              <input type="checkbox" id="mon-thu-active" checked />
+              <label for="mon-thu-active">Activo</label>
+            </div>
+            <div class="schedule-form">
+              <div class="form-group">
+                <label for="mon-thu-start">Hora de inicio</label>
+                <input type="time" id="mon-thu-start" value="17:30" />
+              </div>
+              <div class="form-group">
+                <label for="mon-thu-end">Hora de fin</label>
+                <input type="time" id="mon-thu-end" value="20:00" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <h3>Viernes</h3>
+            <div class="day-checkbox">
+              <input type="checkbox" id="fri-active" />
+              <label for="fri-active">Activo</label>
+            </div>
+            <div class="schedule-form">
+              <div class="form-group">
+                <label for="fri-start">Hora de inicio</label>
+                <input type="time" id="fri-start" value="09:00" disabled />
+              </div>
+              <div class="form-group">
+                <label for="fri-end">Hora de fin</label>
+                <input type="time" id="fri-end" value="17:00" disabled />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <h3>Sábado</h3>
+            <div class="day-checkbox">
+              <input type="checkbox" id="sat-active" checked />
+              <label for="sat-active">Activo</label>
+            </div>
+            <div class="schedule-form">
+              <div class="form-group">
+                <label for="sat-start">Hora de inicio</label>
+                <input type="time" id="sat-start" value="14:00" />
+              </div>
+              <div class="form-group">
+                <label for="sat-end">Hora de fin</label>
+                <input type="time" id="sat-end" value="19:00" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <h3>Domingo</h3>
+            <div class="day-checkbox">
+              <input type="checkbox" id="sun-active" checked />
+              <label for="sun-active">Activo</label>
+            </div>
+            <div class="schedule-form">
+              <div class="form-group">
+                <label for="sun-start">Hora de inicio</label>
+                <input type="time" id="sun-start" value="09:00" />
+              </div>
+              <div class="form-group">
+                <label for="sun-end">Hora de fin</label>
+                <input type="time" id="sun-end" value="21:00" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="cancel-schedule"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modales: Cambiar Estado y Reagendar -->
+    <div id="modal-estado" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Cambiar estado de cita</h2>
+          <button class="close-modal" id="close-modal-estado">&times;</button>
+        </div>
+        <input type="hidden" id="estado-id-cita" />
+        <div class="form-group">
+          <label for="estado-nuevo">Nuevo estado</label>
+          <select id="estado-nuevo" class="form-select">
+            <option value="pendiente">Pendiente</option>
+            <option value="confirmada">Confirmada</option>
+            <option value="cancelada">Cancelada</option>
+            <option value="completada">Completada</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button id="btn-guardar-estado" class="btn btn-primary">
+            Guardar
+          </button>
+          <button id="btn-cerrar-estado" class="btn btn-secondary">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-reagendar" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Reagendar cita</h2>
+          <button class="close-modal" id="close-modal-reagendar">
+            &times;
+          </button>
+        </div>
+        <input type="hidden" id="reagendar-id-cita" />
+        <div class="form-group">
+          <label for="reagendar-fecha">Nueva fecha</label>
+          <input type="date" id="reagendar-fecha" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label for="reagendar-hora">Nueva hora</label>
+          <input type="time" id="reagendar-hora" class="form-input" />
+        </div>
+        <div class="form-actions">
+          <button id="btn-guardar-reagendar" class="btn btn-primary">
+            Guardar
+          </button>
+          <button id="btn-cerrar-reagendar" class="btn btn-secondary">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-logo">
+        <img
+          class="imagen-de-barberia"
+          src="../images/barber.jpg"
+          alt="Barber Studio Logo"
+        />
+      </div>
+      <nav class="text-link-list" aria-labelledby="footer-contact">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-contact" class="text-strong">
+            <span class="text-strong-2">contacto</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a href="tel:9837324637" class="list-item">9837324637</a>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:barberpi@utttn.mx" class="list-item-2"
+              >barberpi@utttn.mx</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-location">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-location" class="text-strong">
+            <span class="text-strong-2">ubicación</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a
+              href="https://maps.app.goo.gl/ZD5gur5vPiwKMVCW9?g_st=iw"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="list-item-7"
+              >google.maps/micasa</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-creator">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-creator" class="text-strong">
+            <span class="">creado por:</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <span class="list-item-11">Axel Rivera</span>
+          </li>
+          <li class="text-link-list-item">
+            <span class="list-item-12">contactos:</span>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:axel.delgado@uttn.mx" class="list-item-13"
+              >axel.delgado@uttn.mx</a
+            >
+          </li>
+          <li class="text-link-list-item">
+            <a href="tel:8994287620" class="list-item">8994287620</a>
+          </li>
+        </ul>
+      </nav>
+    </footer>
+    <script>
+      const API_BASE = "http://localhost:4000/api";
+      console.log("SCRIPT barber_agenda cargado"); // DEBUG 1
+      function getToken() {
+        return localStorage.getItem("token");
+      }
+      function getRol() {
+        return localStorage.getItem("rol");
+      }
+      function getUserId() {
+        return localStorage.getItem("user_id");
+      }
+
+      const BARBERO_ID = getUserId();
+
+      let currentDate = new Date();
+      let selectedDate = null; // se asigna en DOMContentLoaded
+      let horarioSemanal = {};
+
+      // Util para comparar solo fecha (sin hora)
+      function getTodayDateOnly() {
+        const t = new Date();
+        t.setHours(0, 0, 0, 0);
+        return t;
+      }
+
+      document.addEventListener("DOMContentLoaded", async function () {
+        console.log("DOMContentLoaded en barber_agenda");
+        const token = getToken();
+        const rol = getRol();
+
+        if (rol !== "barbero" && rol !== "admin") {
+          alert("No tienes permisos para acceder a esta página");
+          window.location.href = "/barberpi/templates/home.html";
+          return;
+        }
+
+        // Preseleccionar HOY
+        const hoy = getTodayDateOnly();
+        selectedDate = formatDate(hoy);
+
+        await cargarHorarioSemanal();
+        generateCalendar(currentDate);
+        selectDate(selectedDate); // pinta hoy y carga agenda
+        setupEventListeners();
+      });
+
+      async function cargarHorarioSemanal() {
+        const token = getToken();
+        try {
+          const resp = await fetch(`${API_BASE}/horario-semanal`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!resp.ok) {
+            console.error("Error al cargar horario semanal");
+            return;
+          }
+          const data = await resp.json();
+          horarioSemanal = {};
+          for (const h of data) {
+            if (h.activo) {
+              horarioSemanal[h.dia_semana] = {
+                hora_inicio: h.hora_inicio,
+                hora_fin: h.hora_fin,
+                duracion_minutos: h.duracion_minutos,
+              };
+            }
+          }
+          prellenarModalHorario();
+        } catch (err) {
+          console.error("Error al cargar horario semanal:", err);
+        }
+      }
+
+      function prellenarModalHorario() {
+        const monThu = horarioSemanal[1] || null;
+        if (monThu) {
+          document.getElementById("mon-thu-active").checked = true;
+          document.getElementById("mon-thu-start").value =
+            monThu.hora_inicio.slice(0, 5);
+          document.getElementById("mon-thu-end").value = monThu.hora_fin.slice(
+            0,
+            5
+          );
+          document.getElementById("mon-thu-start").disabled = false;
+          document.getElementById("mon-thu-end").disabled = false;
+        } else {
+          document.getElementById("mon-thu-active").checked = false;
+          document.getElementById("mon-thu-start").disabled = true;
+          document.getElementById("mon-thu-end").disabled = true;
+        }
+
+        const fri = horarioSemanal[5] || null;
+        if (fri) {
+          document.getElementById("fri-active").checked = true;
+          document.getElementById("fri-start").value = fri.hora_inicio.slice(
+            0,
+            5
+          );
+          document.getElementById("fri-end").value = fri.hora_fin.slice(0, 5);
+          document.getElementById("fri-start").disabled = false;
+          document.getElementById("fri-end").disabled = false;
+        } else {
+          document.getElementById("fri-active").checked = false;
+          document.getElementById("fri-start").disabled = true;
+          document.getElementById("fri-end").disabled = true;
+        }
+
+        const sat = horarioSemanal[6] || null;
+        if (sat) {
+          document.getElementById("sat-active").checked = true;
+          document.getElementById("sat-start").value = sat.hora_inicio.slice(
+            0,
+            5
+          );
+          document.getElementById("sat-end").value = sat.hora_fin.slice(0, 5);
+          document.getElementById("sat-start").disabled = false;
+          document.getElementById("sat-end").disabled = false;
+        } else {
+          document.getElementById("sat-active").checked = false;
+          document.getElementById("sat-start").disabled = true;
+          document.getElementById("sat-end").disabled = true;
+        }
+
+        const sun = horarioSemanal[0] || null;
+        if (sun) {
+          document.getElementById("sun-active").checked = true;
+          document.getElementById("sun-start").value = sun.hora_inicio.slice(
+            0,
+            5
+          );
+          document.getElementById("sun-end").value = sun.hora_fin.slice(0, 5);
+          document.getElementById("sun-start").disabled = false;
+          document.getElementById("sun-end").disabled = false;
+        } else {
+          document.getElementById("sun-active").checked = false;
+          document.getElementById("sun-start").disabled = true;
+          document.getElementById("sun-end").disabled = true;
+        }
+      }
+
+      function setupEventListeners() {
+        console.log("setupEventListeners ejecutado");
+        document
+          .getElementById("prev-month")
+          .addEventListener("click", function () {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            generateCalendar(currentDate);
+          });
+
+        document
+          .getElementById("next-month")
+          .addEventListener("click", function () {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            generateCalendar(currentDate);
+          });
+
+        document.getElementById("today").addEventListener("click", function () {
+          currentDate = new Date();
+          const hoy = getTodayDateOnly();
+          selectedDate = formatDate(hoy);
+          generateCalendar(currentDate);
+          selectDate(selectedDate);
+        });
+
+        document
+          .getElementById("edit-schedule")
+          .addEventListener("click", function () {
+            document.getElementById("schedule-modal").style.display = "flex";
+          });
+
+        document
+          .getElementById("close-modal")
+          .addEventListener("click", function () {
+            document.getElementById("schedule-modal").style.display = "none";
+          });
+
+        document
+          .getElementById("cancel-schedule")
+          .addEventListener("click", function () {
+            document.getElementById("schedule-modal").style.display = "none";
+          });
+
+        document
+          .getElementById("schedule-form")
+          .addEventListener("submit", function (e) {
+            e.preventDefault();
+            saveScheduleChanges();
+          });
+
+        setupCheckboxToggle("mon-thu-active", ["mon-thu-start", "mon-thu-end"]);
+        setupCheckboxToggle("fri-active", ["fri-start", "fri-end"]);
+        setupCheckboxToggle("sat-active", ["sat-start", "sat-end"]);
+        setupCheckboxToggle("sun-active", ["sun-start", "sun-end"]);
+
+        document
+          .getElementById("mark-working")
+          .addEventListener("click", function () {
+            if (selectedDate) markDayAs(selectedDate, "working");
+          });
+
+        document
+          .getElementById("mark-busy")
+          .addEventListener("click", function () {
+            if (selectedDate) markDayAs(selectedDate, "busy");
+          });
+
+        document
+          .getElementById("add-custom")
+          .addEventListener("click", function () {
+            if (selectedDate) addCustomMessage(selectedDate);
+          });
+
+        document
+          .getElementById("open-servicios-modal")
+          .addEventListener("click", async () => {
+            document.getElementById("servicios-modal").style.display = "block";
+            await cargarServiciosBarbero();
+          });
+
+        document
+          .getElementById("close-servicios-modal")
+          .addEventListener("click", () => {
+            document.getElementById("servicios-modal").style.display = "none";
+          });
+
+        // servicios, guardar, etc. se quedan igual que antes...
+
+        // Modales estado
+        document
+          .getElementById("close-modal-estado")
+          .addEventListener("click", cerrarModalEstado);
+        document
+          .getElementById("btn-cerrar-estado")
+          .addEventListener("click", cerrarModalEstado);
+        document
+          .getElementById("btn-guardar-estado")
+          .addEventListener("click", guardarEstado);
+        console.log("guardar estado");
+
+        // Modales reagendar
+        document
+          .getElementById("close-modal-reagendar")
+          .addEventListener("click", cerrarModalReagendar);
+        document
+          .getElementById("btn-cerrar-reagendar")
+          .addEventListener("click", cerrarModalReagendar);
+        document
+          .getElementById("btn-guardar-reagendar")
+          .addEventListener("click", guardarReagendar);
+      }
+
+      function setupCheckboxToggle(checkboxId, inputIds) {
+        const checkbox = document.getElementById(checkboxId);
+        const inputs = inputIds.map((id) => document.getElementById(id));
+        checkbox.addEventListener("change", function () {
+          inputs.forEach((input) => {
+            input.disabled = !checkbox.checked;
+          });
+        });
+        inputs.forEach((input) => {
+          input.disabled = !checkbox.checked;
+        });
+      }
+
+      function generateCalendar(date) {
+        const calendar = document.getElementById("calendar");
+        calendar.innerHTML = "";
+
+        const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+        days.forEach((day) => {
+          const dayHeader = document.createElement("div");
+          dayHeader.className = "calendar-day-header";
+          dayHeader.textContent = day;
+          calendar.appendChild(dayHeader);
+        });
+
+        const monthNames = [
+          /* ... */
+        ];
+        document.getElementById("current-month").textContent = `${
+          monthNames[date.getMonth()]
+        } ${date.getFullYear()}`;
+
+        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        const prevMonthLastDay = new Date(
+          date.getFullYear(),
+          date.getMonth(),
+          0
+        ).getDate();
+        const startingDay = firstDay.getDay();
+
+        const today = getTodayDateOnly(); // 👈 importante
+
+        // mes anterior
+        for (let i = startingDay - 1; i >= 0; i--) {
+          const d = new Date(
+            date.getFullYear(),
+            date.getMonth() - 1,
+            prevMonthLastDay - i
+          );
+          const el = createDayElement(d, true, today);
+          calendar.appendChild(el);
+        }
+
+        // mes actual
+        for (let i = 1; i <= lastDay.getDate(); i++) {
+          const d = new Date(date.getFullYear(), date.getMonth(), i);
+          const el = createDayElement(d, false, today);
+          calendar.appendChild(el);
+        }
+
+        // siguiente mes
+        const totalCells = 42;
+        const usedCells = startingDay + lastDay.getDate();
+        const remaining = totalCells - usedCells;
+
+        for (let i = 1; i <= remaining; i++) {
+          const d = new Date(date.getFullYear(), date.getMonth() + 1, i);
+          const el = createDayElement(d, true, today);
+          calendar.appendChild(el);
+        }
+      }
+
+      // isOtherMonth se mantiene, todayDateOnly se pasa para validar pasado/futuro
+      function createDayElement(dateObj, isOtherMonth, todayDateOnly) {
+        const dayElement = document.createElement("div");
+        dayElement.className = "calendar-day";
+        if (isOtherMonth) {
+          dayElement.classList.add("other-month");
+        }
+
+        const dayNumber = document.createElement("div");
+        dayNumber.className = "calendar-day-number";
+        dayNumber.textContent = dateObj.getDate();
+        dayElement.appendChild(dayNumber);
+
+        const dateOnly = new Date(dateObj);
+        dateOnly.setHours(0, 0, 0, 0);
+
+        const dateStr = formatDate(dateObj);
+        dayElement.dataset.date = dateStr;
+        // Bloquear días pasados
+        if (dateOnly < todayDateOnly) {
+          dayElement.classList.add("past-day");
+          // NO añadimos listener, no se puede seleccionar
+        } else {
+          dayElement.addEventListener("click", function () {
+            selectDate(dateStr);
+          });
+        }
+
+        // Marcar selección si coincide con selectedDate
+        if (selectedDate && dateStr === selectedDate) {
+          dayElement.classList.add("selected");
+        }
+
+        return dayElement;
+      }
+      function selectDate(dateStr) {
+        // Quitar selección anterior
+        const prev = document.querySelector(".calendar-day.selected");
+        if (prev) prev.classList.remove("selected");
+
+        // Buscar el div cuyo data-date coincida
+        const days = document.querySelectorAll(".calendar-day");
+        for (let day of days) {
+          if (day.dataset.date === dateStr) {
+            day.classList.add("selected");
+            break;
+          }
+        }
+
+        // Actualizar fecha seleccionada y agenda
+        selectedDate = dateStr;
+        updateDaySchedule(dateStr);
+      }
+
+      async function updateDaySchedule(dateStr) {
+        const date = parseDate(dateStr);
+        const dayNames = [
+          "Domingo",
+          "Lunes",
+          "Martes",
+          "Miércoles",
+          "Jueves",
+          "Viernes",
+          "Sábado",
+        ];
+        const monthNames = [
+          "Enero",
+          "Febrero",
+          "Marzo",
+          "Abril",
+          "Mayo",
+          "Junio",
+          "Julio",
+          "Agosto",
+          "Septiembre",
+          "Octubre",
+          "Noviembre",
+          "Diciembre",
+        ];
+
+        document.getElementById("selected-day").textContent =
+          `${dayNames[date.getDay()]}, ${date.getDate()} de ` +
+          `${monthNames[date.getMonth()]} de ${date.getFullYear()}`;
+
+        const scheduleBody = document.getElementById("schedule-body");
+        scheduleBody.innerHTML = "";
+
+        const token = getToken();
+
+        try {
+          const resp = await fetch(`${API_BASE}/horario-dia?fecha=${dateStr}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!resp.ok) {
+            scheduleBody.innerHTML =
+              '<tr><td colspan="5" style="text-align:center;padding:2rem;">Error al cargar horarios</td></tr>';
+            return;
+          }
+
+          const data = await resp.json();
+          const slots = data.slots || [];
+
+          const availableSlotsText = document.getElementById(
+            "available-slots-text"
+          );
+          const availableSlotsList = document.getElementById(
+            "available-slots-list"
+          );
+
+          availableSlotsText.innerHTML = "";
+          availableSlotsList.innerHTML = "";
+
+          if (slots.length === 0) {
+            scheduleBody.innerHTML =
+              '<tr><td colspan="5" style="text-align:center;padding:2rem;">Día cerrado - Sin horarios de atención</td></tr>';
+            availableSlotsText.textContent =
+              "Día cerrado - Sin horarios de atención";
+            return;
+          }
+
+          const citasResp = await fetch(
+            `${API_BASE}/citas-dia?fecha=${dateStr}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          let citas = [];
+          if (citasResp.ok) {
+            citas = await citasResp.json();
+          }
+
+          const libres = slots.filter((s) => s.disponible);
+          if (libres.length === 0) {
+            availableSlotsText.textContent =
+              "No quedan horarios libres para este día.";
+          } else {
+            availableSlotsText.textContent = `Horarios disponibles (${libres.length}):`;
+            libres.forEach((slot) => {
+              const li = document.createElement("li");
+              li.textContent = slot.hora;
+              availableSlotsList.appendChild(li);
+            });
+          }
+
+          slots.forEach((slot) => {
+            const cita = citas.find((c) => c.hora.slice(0, 5) === slot.hora);
+
+            const row = document.createElement("tr");
+
+            const timeCell = document.createElement("td");
+            timeCell.textContent = slot.hora;
+            row.appendChild(timeCell);
+
+            const statusCell = document.createElement("td");
+            let statusText = "";
+            let statusClass = "";
+            if (!slot.disponible) {
+              if (cita) {
+                statusText = cita.estado;
+                statusClass = "status-busy";
+              } else {
+                statusText = "Ocupado";
+                statusClass = "status-busy";
+              }
+            } else {
+              statusText = "Libre";
+              statusClass = "status-free";
+            }
+            statusCell.textContent = statusText;
+            statusCell.className = statusClass;
+            row.appendChild(statusCell);
+
+            const clientCell = document.createElement("td");
+            clientCell.textContent = cita
+              ? cita.cliente_nombre || cita.nombre_usuario || cita.id_usuario
+              : "-";
+            row.appendChild(clientCell);
+
+            const serviceCell = document.createElement("td");
+            serviceCell.textContent = cita
+              ? cita.servicio_nombre || cita.servicio || "-"
+              : "-";
+            row.appendChild(serviceCell);
+
+            const actionsCell = document.createElement("td");
+            const actionsDiv = document.createElement("div");
+            actionsDiv.className = "action-buttons";
+
+            if (slot.disponible) {
+              const busyBtn = document.createElement("button");
+              busyBtn.className = "btn btn-warning";
+              busyBtn.textContent = "Ocupar";
+              busyBtn.addEventListener("click", () =>
+                marcarSlot(dateStr, slot.hora, "busy")
+              );
+              actionsDiv.appendChild(busyBtn);
+            } else if (cita) {
+              const estadoBtn = document.createElement("button");
+              estadoBtn.className = "btn btn-primary";
+              estadoBtn.textContent = "Estado";
+              estadoBtn.addEventListener("click", () =>
+                abrirModalEstado(cita.id_cita)
+              );
+              actionsDiv.appendChild(estadoBtn);
+
+              const liberarBtn = document.createElement("button");
+              liberarBtn.className = "btn btn-secondary";
+              liberarBtn.textContent = "Liberar";
+              liberarBtn.addEventListener("click", () =>
+                liberarSlot(selectedDate, cita.id_cita)
+              );
+              actionsDiv.appendChild(liberarBtn);
+
+              const reagendarBtn = document.createElement("button");
+              reagendarBtn.className = "btn btn-secondary";
+              reagendarBtn.textContent = "Reagendar";
+              reagendarBtn.addEventListener("click", () =>
+                abrirModalReagendar(cita.id_cita)
+              );
+              actionsDiv.appendChild(reagendarBtn);
+            } else {
+              const freeBtn = document.createElement("button");
+              freeBtn.className = "btn btn-primary";
+              freeBtn.textContent = "Liberar";
+              freeBtn.addEventListener("click", () =>
+                liberarSlot(dateStr, slot.hora)
+              );
+              actionsDiv.appendChild(freeBtn);
+            }
+
+            actionsCell.appendChild(actionsDiv);
+            row.appendChild(actionsCell);
+
+            scheduleBody.appendChild(row);
+          });
+        } catch (err) {
+          console.error("Error al cargar agenda del día:", err);
+          scheduleBody.innerHTML =
+            '<tr><td colspan="5" style="text-align:center;padding:2rem;">Error de conexión</td></tr>';
+        }
+      }
+
+      function abrirModalEstado(id_cita) {
+        console.log("abrirModalEstado, id_cita =", id_cita);
+        document.getElementById("estado-id-cita").value = id_cita;
+        document.getElementById("modal-estado").style.display = "flex";
+      }
+      function cerrarModalEstado() {
+        document.getElementById("modal-estado").style.display = "none";
+      }
+      async function guardarEstado() {
+        const id_cita = document.getElementById("estado-id-cita").value;
+        const estado = document.getElementById("estado-nuevo").value;
+        const token = getToken();
+        try {
+          const resp = await fetch(`${API_BASE}/citas/${id_cita}/estado`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ estado }),
+          });
+          const data = await resp.json();
+          if (!resp.ok) {
+            alert(data.error || "Error al actualizar estado");
+            return;
+          }
+          alert("Estado actualizado");
+          cerrarModalEstado();
+          updateDaySchedule(selectedDate);
+        } catch (err) {
+          console.error("Error al cambiar estado:", err);
+          alert("Error de conexión");
+        }
+      }
+
+      function abrirModalReagendar(id_cita) {
+        document.getElementById("reagendar-id-cita").value = id_cita;
+        document.getElementById("reagendar-fecha").value = "";
+        document.getElementById("reagendar-hora").value = "";
+        document.getElementById("modal-reagendar").style.display = "flex";
+      }
+      function cerrarModalReagendar() {
+        document.getElementById("modal-reagendar").style.display = "none";
+      }
+      async function guardarReagendar() {
+        const id_cita = document.getElementById("reagendar-id-cita").value;
+        const fecha = document.getElementById("reagendar-fecha").value;
+        const hora = document.getElementById("reagendar-hora").value;
+        const token = getToken();
+        if (!fecha || !hora) {
+          alert("Fecha y hora son obligatorias");
+          return;
+        }
+        const horaFull = hora.length === 5 ? hora + ":00" : hora;
+        try {
+          const resp = await fetch(`${API_BASE}/citas/${id_cita}/reagendar`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ fecha, hora: horaFull }),
+          });
+          const data = await resp.json();
+          if (!resp.ok) {
+            alert(data.error || "Error al reagendar cita");
+            return;
+          }
+          alert("Cita reagendada");
+          cerrarModalReagendar();
+          updateDaySchedule(selectedDate);
+        } catch (err) {
+          console.error("Error al reagendar cita:", err);
+          alert("Error de conexión");
+        }
+      }
+
+      async function markDayAs(dateStr, tipo) {
+        const token = getToken();
+        const mensaje = tipo === "busy" ? "No disponible" : "Trabajando";
+        try {
+          const resp = await fetch(`${API_BASE}/marcar-dia`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ fecha: dateStr, tipo, mensaje }),
+          });
+          if (!resp.ok) {
+            alert("Error al marcar día");
+            return;
+          }
+          alert("Día marcado correctamente");
+          updateDaySchedule(dateStr);
+        } catch (err) {
+          console.error("Error al marcar día:", err);
+          alert("Error de conexión");
+        }
+      }
+
+      async function addCustomMessage(dateStr) {
+        const mensaje = prompt(
+          "Ingresa un mensaje personalizado para este día:"
+        );
+        if (!mensaje) return;
+        const token = getToken();
+        try {
+          const resp = await fetch(`${API_BASE}/marcar-dia`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ fecha: dateStr, tipo: "info", mensaje }),
+          });
+          if (!resp.ok) {
+            alert("Error al agregar mensaje");
+            return;
+          }
+          alert("Mensaje agregado correctamente");
+          updateDaySchedule(dateStr);
+        } catch (err) {
+          console.error("Error al agregar mensaje:", err);
+          alert("Error de conexión");
+        }
+      }
+
+      async function marcarSlot(dateStr, hora, tipo) {
+        const token = getToken();
+        try {
+          const resp = await fetch(`${API_BASE}/marcar-slot`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ fecha: dateStr, hora, tipo }),
+          });
+          if (!resp.ok) {
+            alert("Error al marcar slot");
+            return;
+          }
+          updateDaySchedule(dateStr);
+        } catch (err) {
+          console.error("Error al marcar slot:", err);
+          alert("Error de conexión");
+        }
+      }
+
+      async function liberarSlot(dateStr, id_cita) {
+        const token = getToken();
+        try {
+          const resp = await fetch(`${API_BASE}/liberar-slot`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ id_cita }), // ✅ enviamos la cita
+          });
+          if (!resp.ok) {
+            const data = await resp.json().catch(() => ({}));
+            alert(data.error || "Error al liberar slot");
+            return;
+          }
+          updateDaySchedule(dateStr);
+        } catch (err) {
+          console.error("Error al liberar slot:", err);
+          alert("Error de conexión");
+        }
+      }
+
+      function normalizeTimeToSeconds(t) {
+        if (!t) return null;
+        if (t.length === 5) return t + ":00";
+        return t;
+      }
+
+      async function saveScheduleChanges() {
+        const token = getToken();
+        const horarios = [];
+
+        const monThuActive = document.getElementById("mon-thu-active").checked;
+        if (monThuActive) {
+          let start = normalizeTimeToSeconds(
+            document.getElementById("mon-thu-start").value
+          );
+          let end = normalizeTimeToSeconds(
+            document.getElementById("mon-thu-end").value
+          );
+          if (!start || !end) {
+            alert("Debes ingresar hora de inicio y fin para Lunes a Jueves");
+            return;
+          }
+          for (let d = 1; d <= 4; d++) {
+            horarios.push({
+              dia_semana: d,
+              hora_inicio: start,
+              hora_fin: end,
+              duracion_minutos: 45,
+              activo: true,
+            });
+          }
+        }
+
+        const friActive = document.getElementById("fri-active").checked;
+        if (friActive) {
+          let start = normalizeTimeToSeconds(
+            document.getElementById("fri-start").value
+          );
+          let end = normalizeTimeToSeconds(
+            document.getElementById("fri-end").value
+          );
+          if (!start || !end) {
+            alert("Debes ingresar hora de inicio y fin para Viernes");
+            return;
+          }
+          horarios.push({
+            dia_semana: 5,
+            hora_inicio: start,
+            hora_fin: end,
+            duracion_minutos: 45,
+            activo: true,
+          });
+        }
+
+        const satActive = document.getElementById("sat-active").checked;
+        if (satActive) {
+          let start = normalizeTimeToSeconds(
+            document.getElementById("sat-start").value
+          );
+          let end = normalizeTimeToSeconds(
+            document.getElementById("sat-end").value
+          );
+          if (!start || !end) {
+            alert("Debes ingresar hora de inicio y fin para Sábado");
+            return;
+          }
+          horarios.push({
+            dia_semana: 6,
+            hora_inicio: start,
+            hora_fin: end,
+            duracion_minutos: 45,
+            activo: true,
+          });
+        }
+
+        const sunActive = document.getElementById("sun-active").checked;
+        if (sunActive) {
+          let start = normalizeTimeToSeconds(
+            document.getElementById("sun-start").value
+          );
+          let end = normalizeTimeToSeconds(
+            document.getElementById("sun-end").value
+          );
+          if (!start || !end) {
+            alert("Debes ingresar hora de inicio y fin para Domingo");
+            return;
+          }
+          horarios.push({
+            dia_semana: 0,
+            hora_inicio: start,
+            hora_fin: end,
+            duracion_minutos: 45,
+            activo: true,
+          });
+        }
+
+        try {
+          const resp = await fetch(`${API_BASE}/horario-semanal`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ horarios }),
+          });
+          if (!resp.ok) {
+            const errorText = await resp.text();
+            console.error("Error al guardar horarios:", resp.status, errorText);
+            alert("Error al guardar horarios");
+            return;
+          }
+          alert("Horarios actualizados correctamente");
+          document.getElementById("schedule-modal").style.display = "none";
+          await cargarHorarioSemanal();
+          if (selectedDate) {
+            updateDaySchedule(selectedDate);
+          }
+        } catch (err) {
+          console.error("Error al guardar horarios:", err);
+          alert("Error de conexión");
+        }
+      }
+
+      function formatDate(d) {
+        return (
+          d.getFullYear() +
+          "-" +
+          String(d.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(d.getDate()).padStart(2, "0")
+        );
+      }
+
+      function parseDate(str) {
+        const [y, m, d] = str.split("-").map((n) => parseInt(n));
+        return new Date(y, m - 1, d);
+      }
+    </script>
+  </body>
+</html>

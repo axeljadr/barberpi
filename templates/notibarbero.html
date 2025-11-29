@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Barber Studio - Notificaciones</title>
+    <link rel="stylesheet" href="../static/notibarbero.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="block">
+        <img
+          class="imagen-de-barberia"
+          src="/barberpi/images/barber.jpg"
+          alt="Logo Barber Studio"
+        />
+      </div>
+      <nav class="navigation-pill-list" aria-label="Navegación principal">
+        <a href="../templates/perfil.html" class="navigation-pill">
+          <span class="title">Mi Perfil</span>
+        </a>
+        <a href="../templates/homebarber.html" class="navigation-pill">
+          <span class="title">Inicio</span>
+        </a>
+        <a href="../templates/barber_agenda.html" class="navigation-pill">
+          <span class="">Agenda</span>
+        </a>
+        <a href="../templates/notibarbero.html" class="navigation-pill">
+          <span class="title">Notificaciones</span>
+        </a>
+        <a href="../templates/login.html" class="navigation-pill">
+          <span class="title">Cerrar Sesión</span>
+        </a>
+      </nav>
+    </header>
+
+    <main class="main-content">
+      <div class="notifications-header">
+        <h1 class="notifications-title">Notificaciones</h1>
+        <div class="notifications-actions">
+          <button class="mark-all-read" id="mark-all-read">
+            Marcar todas como leídas
+          </button>
+        </div>
+      </div>
+
+      <div class="notifications-container">
+        <div class="notification-tabs">
+          <div class="notification-tab active" data-tab="all">Todas</div>
+          <div class="notification-tab" data-tab="unread">No leídas</div>
+          <div class="notification-tab" data-tab="appointments">
+            Nuevas Citas
+          </div>
+          <div class="notification-tab" data-tab="changes">Cambios</div>
+        </div>
+
+        <div class="notification-list" id="notification-list">
+          <!-- Las notificaciones se generarán con JavaScript -->
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-logo">
+        <img
+          class="imagen-de-barberia"
+          src="/barberpi/images/barber.jpg"
+          alt="Barber Studio Logo"
+        />
+      </div>
+      <nav class="text-link-list" aria-labelledby="footer-contact">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-contact" class="text-strong">
+            <span class="text-strong-2">contacto</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a href="tel:9837324637" class="list-item">9837324637</a>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:barberpi@utttn.mx" class="list-item-2"
+              >barberpi@utttn.mx</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-location">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-location" class="text-strong">
+            <span class="text-strong-2">ubicación</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a
+              href="https://maps.app.goo.gl/ZD5gur5vPiwKMVCW9?g_st=iw"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="list-item-7"
+              >google.maps/micasa</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-creator">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-creator" class="text-strong">
+            <span class="">creado por:</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <span class="list-item-11">Axel Rivera</span>
+          </li>
+          <li class="text-link-list-item">
+            <span class="list-item-12">contactos:</span>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:axel.delgado@uttn.mx" class="list-item-13"
+              >axel.delgado@uttn.mx</a
+            >
+          </li>
+          <li class="text-link-list-item">
+            <a href="tel:8994287620" class="list-item">8994287620</a>
+          </li>
+        </ul>
+      </nav>
+    </footer>
+    <script>
+      const API_NOTIFICACIONES = "http://localhost:4000/api/notificaciones";
+
+      let notifications = [];
+      let currentFilter = "all";
+
+      function getToken() {
+        return localStorage.getItem("token");
+      }
+
+      // "Leídas" solo en el navegador del barbero (localStorage)
+      function getReadSet() {
+        try {
+          const raw = localStorage.getItem("noti_barbero_leidas") || "[]";
+          return new Set(JSON.parse(raw));
+        } catch {
+          return new Set();
+        }
+      }
+
+      function saveReadSet(set) {
+        localStorage.setItem(
+          "noti_barbero_leidas",
+          JSON.stringify(Array.from(set))
+        );
+      }
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadNotifications();
+        setupEventListeners();
+      });
+
+      async function loadNotifications() {
+        const token = getToken();
+        if (!token) {
+          alert("No estás autenticado. Redirigiendo al login...");
+          window.location.href = "../templates/login.html";
+          return;
+        }
+
+        try {
+          const resp = await fetch(`${API_NOTIFICACIONES}/barbero`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!resp.ok) {
+            const text = await resp.text();
+            console.error("Error al cargar notificaciones:", resp.status, text);
+            alert("Error al cargar notificaciones");
+            return;
+          }
+
+          const data = await resp.json();
+          const leidasSet = getReadSet();
+
+          notifications = data.map((n) => ({
+            id: n.id_cita,
+            id_cita: n.id_cita,
+            type: mapTipo(n.tipo),
+            title: n.titulo,
+            message: n.mensaje,
+            client: n.nombre_cliente,
+            service: n.nombre_servicio,
+            date: n.fecha_cita,
+            time: n.hora_inicio,
+            timestamp: new Date(n.timestamp),
+            read: leidasSet.has(n.id_cita),
+            actions: getActionsForType(n.tipo),
+          }));
+
+          renderNotifications();
+        } catch (err) {
+          console.error("Error conexión notificaciones:", err);
+          alert("Error de conexión al cargar notificaciones");
+        }
+      }
+
+      function mapTipo(tipo) {
+        const map = {
+          nueva: "appointment",
+          cancelada: "cancellation",
+          confirmada: "appointment",
+          completada: "appointment",
+        };
+        return map[tipo] || "appointment";
+      }
+
+      function getActionsForType(tipo) {
+        if (tipo === "nueva") {
+          return ["view", "confirm"];
+        } else if (tipo === "cancelada") {
+          return ["reschedule"];
+        } else if (tipo === "confirmada" || tipo === "completada") {
+          return ["view"];
+        }
+        return ["view"];
+      }
+
+      function setupEventListeners() {
+        document.querySelectorAll(".notification-tab").forEach((tab) => {
+          tab.addEventListener("click", function () {
+            document
+              .querySelectorAll(".notification-tab")
+              .forEach((t) => t.classList.remove("active"));
+            this.classList.add("active");
+            currentFilter = this.getAttribute("data-tab");
+            renderNotifications();
+          });
+        });
+
+        document
+          .getElementById("mark-all-read")
+          .addEventListener("click", markAllAsRead);
+      }
+
+      function renderNotifications() {
+        const container = document.getElementById("notification-list");
+        container.innerHTML = "";
+
+        let filtered = notifications;
+
+        if (currentFilter === "unread") {
+          filtered = notifications.filter((n) => !n.read);
+        } else if (currentFilter === "appointments") {
+          filtered = notifications.filter((n) => n.type === "appointment");
+        } else if (currentFilter === "changes") {
+          filtered = notifications.filter((n) => n.type === "cancellation");
+        }
+
+        filtered.sort((a, b) => b.timestamp - a.timestamp);
+
+        if (!filtered.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty-notifications";
+          empty.textContent = "No hay notificaciones para mostrar";
+          container.appendChild(empty);
+          return;
+        }
+
+        filtered.forEach((n) =>
+          container.appendChild(createNotificationElement(n))
+        );
+      }
+
+      function createNotificationElement(notification) {
+        const item = document.createElement("div");
+        item.className = `notification-item ${
+          notification.read ? "" : "unread"
+        }`;
+        item.dataset.id = notification.id;
+
+        let iconClass = "";
+        let iconText = "";
+
+        switch (notification.type) {
+          case "appointment":
+            iconClass = "appointment";
+            iconText = "📅";
+            break;
+          case "cancellation":
+            iconClass = "cancellation";
+            iconText = "❌";
+            break;
+        }
+
+        const timeAgo = getTimeAgo(notification.timestamp);
+
+        let buttonsHtml = "";
+        if (notification.actions.includes("view")) {
+          buttonsHtml += `<button class="btn btn-primary" data-action="view">Ver Detalles</button>`;
+        }
+        if (notification.actions.includes("confirm")) {
+          buttonsHtml += `<button class="btn btn-success" data-action="confirm">Confirmar</button>`;
+        }
+        if (notification.actions.includes("reschedule")) {
+          buttonsHtml += `<button class="btn btn-warning" data-action="reschedule">Reagendar</button>`;
+        }
+        if (!notification.read) {
+          buttonsHtml += `<button class="btn btn-secondary" data-action="mark-read">Marcar como leída</button>`;
+        }
+
+        item.innerHTML = `
+      <div class="notification-icon ${iconClass}">${iconText}</div>
+      <div class="notification-content">
+        <div class="notification-message">
+          <strong>${notification.title}</strong><br>
+          ${notification.message}
+          ${
+            notification.client
+              ? `<br><span class="notification-client">Cliente: ${notification.client}</span>`
+              : ""
+          }
+          ${
+            notification.service
+              ? `<span class="notification-service"> - ${notification.service}</span>`
+              : ""
+          }
+          ${
+            notification.date
+              ? `<br><span class="notification-date">Fecha: ${formatDate(
+                  notification.date
+                )} a las ${notification.time}</span>`
+              : ""
+          }
+        </div>
+        <div class="notification-meta">
+          <span class="notification-time">${timeAgo}</span>
+          <div class="notification-actions">
+            ${buttonsHtml}
+          </div>
+        </div>
+      </div>
+    `;
+
+        item.querySelectorAll("button").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const action = btn.dataset.action;
+            handleNotificationAction(notification.id, action, notification);
+          });
+        });
+
+        return item;
+      }
+
+      function handleNotificationAction(id, action, notification) {
+        switch (action) {
+          case "view":
+            window.location.href = `../templates/barber_agenda.html?cita=${notification.id_cita}`;
+            break;
+          case "confirm":
+            if (
+              confirm(
+                `¿Confirmar la cita con ${notification.client} para ${notification.service}?`
+              )
+            ) {
+              // Aquí llamarías a tu endpoint de confirmar cita
+              // Por ejemplo: PATCH /api/citas/:id_cita con estado='confirmada'
+              alert("Cita confirmada");
+              markAsRead(id);
+            }
+            break;
+          case "reschedule":
+            window.location.href = `../templates/barber_agenda.html?reagendar=${notification.id_cita}`;
+            break;
+          case "mark-read":
+            markAsRead(id);
+            break;
+        }
+      }
+
+      function markAsRead(id) {
+        const set = getReadSet();
+        set.add(id);
+        saveReadSet(set);
+
+        const notif = notifications.find((n) => n.id === id);
+        if (notif) notif.read = true;
+
+        renderNotifications();
+      }
+
+      function markAllAsRead() {
+        const set = getReadSet();
+        notifications.forEach((n) => set.add(n.id));
+        saveReadSet(set);
+        notifications.forEach((n) => (n.read = true));
+        renderNotifications();
+      }
+
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString("es-ES", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+
+      function getTimeAgo(timestamp) {
+        const now = new Date();
+        const diffMs = now - new Date(timestamp);
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return "Hace un momento";
+        if (diffMins < 60)
+          return `Hace ${diffMins} minuto${diffMins > 1 ? "s" : ""}`;
+        if (diffHours < 24)
+          return `Hace ${diffHours} hora${diffHours > 1 ? "s" : ""}`;
+        if (diffDays < 7)
+          return `Hace ${diffDays} día${diffDays > 1 ? "s" : ""}`;
+        return new Date(timestamp).toLocaleDateString("es-ES");
+      }
+    </script>
+  </body>
+</html>

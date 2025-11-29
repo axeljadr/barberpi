@@ -1,0 +1,356 @@
+<!-- perfil.html -->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mi Perfil - Barbería</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Arial", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .navbar {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .navbar h2 {
+        color: #2c3e50;
+      }
+
+      .btn-logout {
+        padding: 10px 20px;
+        background: #e74c3c;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .card h3 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+      }
+
+      .info-item {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+      }
+
+      .info-item label {
+        display: block;
+        color: #666;
+        font-size: 0.9em;
+        margin-bottom: 5px;
+      }
+
+      .info-item .value {
+        color: #2c3e50;
+        font-size: 1.1em;
+        font-weight: bold;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: #2c3e50;
+        font-weight: bold;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1em;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      button {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-secondary {
+        background: #e0e0e0;
+        color: #2c3e50;
+        margin-left: 10px;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+      }
+
+      .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        display: none;
+      }
+
+      .alert-success {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      #editForm {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <h2>✂️ Barbería - Mi Perfil</h2>
+      <button class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>
+    </div>
+
+    <div class="container">
+      <div id="alertBox" class="alert"></div>
+
+      <!-- Vista de Perfil -->
+      <div id="perfilView" class="card">
+        <h3>Mi Información</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <label>Nombre Completo</label>
+            <div class="value" id="nombreCompleto"></div>
+          </div>
+          <div class="info-item">
+            <label>Edad</label>
+            <div class="value" id="edadView"></div>
+          </div>
+          <div class="info-item">
+            <label>Correo Electrónico</label>
+            <div class="value" id="correoView"></div>
+          </div>
+          <div class="info-item">
+            <label>Teléfono</label>
+            <div class="value" id="numeroView"></div>
+          </div>
+          <div class="info-item">
+            <label>Fecha de Registro</label>
+            <div class="value" id="fechaRegistro"></div>
+          </div>
+        </div>
+        <div style="margin-top: 30px">
+          <button class="btn-primary" onclick="mostrarFormularioEditar()">
+            Editar Perfil
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulario de Edición -->
+      <div id="editForm" class="card">
+        <h3>Editar Perfil</h3>
+        <form onsubmit="actualizarPerfil(event)">
+          <div class="form-group">
+            <label for="editNombre">Nombre</label>
+            <input type="text" id="editNombre" required />
+          </div>
+
+          <div class="form-group">
+            <label for="editApellidoPaterno">Apellido Paterno</label>
+            <input type="text" id="editApellidoPaterno" required />
+          </div>
+
+          <div class="form-group">
+            <label for="editApellidoMaterno">Apellido Materno</label>
+            <input type="text" id="editApellidoMaterno" required />
+          </div>
+
+          <div class="form-group">
+            <label for="editEdad">Edad</label>
+            <input type="number" id="editEdad" min="1" max="120" required />
+          </div>
+
+          <div class="form-group">
+            <label for="editNumero">Teléfono</label>
+            <input type="tel" id="editNumero" required />
+          </div>
+
+          <div>
+            <button type="submit" class="btn-primary">Guardar Cambios</button>
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="cancelarEdicion()"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:3000/api";
+      let perfilData = null;
+
+      cargarPerfil();
+
+      function mostrarAlerta(mensaje, tipo) {
+        const alertBox = document.getElementById("alertBox");
+        alertBox.textContent = mensaje;
+        alertBox.className = `alert alert-${tipo}`;
+        alertBox.style.display = "block";
+        setTimeout(() => {
+          alertBox.style.display = "none";
+        }, 5000);
+      }
+
+      async function cargarPerfil() {
+        const token = localStorage.getItem("token");
+
+        try {
+          const response = await fetch(`${API_URL}/clientes/perfil`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            perfilData = await response.json();
+            mostrarPerfil(perfilData);
+          } else {
+            cerrarSesion();
+          }
+        } catch (error) {
+          mostrarAlerta("❌ Error al cargar perfil", "error");
+          console.error("Error:", error);
+        }
+      }
+
+      function mostrarPerfil(data) {
+        document.getElementById(
+          "nombreCompleto"
+        ).textContent = `${data.nombre} ${data.apellidoPaterno} ${data.apellidoMaterno}`;
+        document.getElementById("edadView").textContent = `${data.edad} años`;
+        document.getElementById("correoView").textContent = data.correo;
+        document.getElementById("numeroView").textContent = data.numero;
+        document.getElementById("fechaRegistro").textContent = new Date(
+          data.fechaRegistro
+        ).toLocaleDateString("es-ES");
+      }
+
+      function mostrarFormularioEditar() {
+        document.getElementById("perfilView").style.display = "none";
+        document.getElementById("editForm").style.display = "block";
+
+        document.getElementById("editNombre").value = perfilData.nombre;
+        document.getElementById("editApellidoPaterno").value =
+          perfilData.apellidoPaterno;
+        document.getElementById("editApellidoMaterno").value =
+          perfilData.apellidoMaterno;
+        document.getElementById("editEdad").value = perfilData.edad;
+        document.getElementById("editNumero").value = perfilData.numero;
+      }
+
+      function cancelarEdicion() {
+        document.getElementById("perfilView").style.display = "block";
+        document.getElementById("editForm").style.display = "none";
+      }
+
+      async function actualizarPerfil(e) {
+        e.preventDefault();
+
+        const token = localStorage.getItem("token");
+        const formData = {
+          nombre: document.getElementById("editNombre").value,
+          apellidoPaterno: document.getElementById("editApellidoPaterno").value,
+          apellidoMaterno: document.getElementById("editApellidoMaterno").value,
+          edad: parseInt(document.getElementById("editEdad").value),
+          numero: document.getElementById("editNumero").value,
+        };
+
+        try {
+          const response = await fetch(`${API_URL}/clientes/perfil`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(formData),
+          });
+
+          if (response.ok) {
+            mostrarAlerta("✅ Perfil actualizado exitosamente", "success");
+            cancelarEdicion();
+            cargarPerfil();
+          } else {
+            mostrarAlerta("❌ Error al actualizar perfil", "error");
+          }
+        } catch (error) {
+          mostrarAlerta("❌ Error de conexión", "error");
+          console.error("Error:", error);
+        }
+      }
+
+      function cerrarSesion() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("cliente");
+        window.location.href = "login.html";
+      }
+    </script>
+  </body>
+</html>
