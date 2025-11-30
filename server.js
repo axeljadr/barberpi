@@ -109,7 +109,9 @@ function verificarToken(req, res, next) {
     return res.status(401).json({ error: "Token inválido o expirado" });
   }
 }
-
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "templates", "login.html"));
+});
 app.post("/api/auth/registro", async (req, res) => {
   const { nombre, email, contraseña } = req.body;
 
