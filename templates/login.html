@@ -36,7 +36,9 @@
       </form>
     </div>
     <script>
-      const API_URL = "http://localhost:4000/api/auth";
+      const API_URL = window.location.hostname === "localhost"
+    ? "http://localhost:4000"
+    : "https://barberpi.onrender.com";
 
       document.addEventListener("DOMContentLoaded", () => {
         const form = document.getElementById("login-form");
