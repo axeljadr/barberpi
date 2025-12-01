@@ -25,6 +25,10 @@ app.use(express.urlencoded({ extended: true }));
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Servir archivos estáticos
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/static", express.static(path.join(__dirname, "static")));
+app.use("/images", express.static(path.join(__dirname, "images")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const storage = multer.diskStorage({
