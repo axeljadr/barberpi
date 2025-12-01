@@ -8,7 +8,7 @@ import multer from "multer";
 import fs from "fs";
 import { fileURLToPath } from "url";
 const app = express();
-const PORT = 4000;
+const PORT = process.env.PORT || 3000;
 const SECRET = "barberpi_secret_2024";
 
 app.use(
@@ -2166,7 +2166,11 @@ app.get("/api/citas/puede-agendar", verificarToken, async (req, res) => {
     res.status(500).json({ error: "Error en el servidor" });
   }
 });
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
-});
+conectarDB()
+  .then(() => {
+    app.listen(PORT, () => console.log(`Servidor en el puerto ${PORT}`));
+  })
+  .catch((err) => {
+    console.error("No se pudo iniciar el servidor por error en la BD");
+  });
+
