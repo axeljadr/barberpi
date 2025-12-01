@@ -60,11 +60,11 @@ const upload = multer({
 });
 
 const dbConfig = {
-  server: "barberpisql.database.windows.net",
-  port: 1433,
-  database: "barberPi",
-  user: "axelrivera",
-  password: "12345678Julio",
+  server: process.env.DB_HOST || "barberpisql.database.windows.net",
+  port: parseInt(process.env.DB_PORT || "1433", 10),
+  database: process.env.DB_NAME || "barberPi",
+  user: process.env.DB_USER || "axelrivera",
+  password: process.env.DB_PASS || "12345678Julio",
   options: {
     encrypt: true,
     trustServerCertificate: false,
@@ -2166,10 +2166,7 @@ app.get("/api/citas/puede-agendar", verificarToken, async (req, res) => {
     res.status(500).json({ error: "Error en el servidor" });
   }
 });
-conectarDB()
-  .then(() => {
-    app.listen(PORT, () => console.log(`Servidor en el puerto ${PORT}`));
-  })
-  .catch((err) => {
-    console.error("No se pudo iniciar el servidor por error en la BD");
-  });
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
+});
