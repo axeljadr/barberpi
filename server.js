@@ -29,7 +29,6 @@ const __dirname = path.dirname(__filename);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/static", express.static(path.join(__dirname, "static")));
 app.use("/images", express.static(path.join(__dirname, "images")));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
