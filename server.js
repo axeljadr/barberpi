@@ -111,10 +111,32 @@ function verificarToken(req, res, next) {
   } catch (err) {
     return res.status(401).json({ error: "Token inválido o expirado" });
   }
-}
+}// Servir páginas HTML
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "login.html"));
 });
+
+app.get("/newaccount", (req, res) => {
+  res.sendFile(path.join(__dirname, "templates", "newaccount.html"));
+});
+
+app.get("/home", (req, res) => {
+  res.sendFile(path.join(__dirname, "templates", "home.html"));
+});
+
+app.get("/homebarber", (req, res) => {
+  res.sendFile(path.join(__dirname, "templates", "homebarber.html"));
+});
+
+app.get("/perfil", (req, res) => {
+  res.sendFile(path.join(__dirname, "templates", "perfil.html"));
+});
+
+app.get("/agendar", (req, res) => {
+  res.sendFile(path.join(__dirname, "templates", "agendar.html"));
+});
+
+// Agrega las demás páginas que tengas...
 app.post("/api/auth/registro", async (req, res) => {
   const { nombre, email, contraseña } = req.body;
 
