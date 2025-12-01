@@ -8,7 +8,12 @@
   </head>
   <body>
     <div class="card">
-      <img class="img" src="/images/barber.jpg" width="130px" />
+      <img
+        class="img"
+        src="/images/barber.jpg"
+        width="130px"
+        alt="Barber Logo"
+      />
       <h2>Login</h2>
 
       <form id="login-form">
@@ -28,17 +33,24 @@
         />
         <div class="divider"></div>
         <div class="create-account">
-          <button type="button" class="create-button">
-            <a href="../templates/newaccount.html">crear cuenta nueva</a>
+          <button
+            type="button"
+            class="create-button"
+            onclick="window.location.href='/newaccount'"
+          >
+            crear cuenta nueva
           </button>
         </div>
         <button type="submit">Login</button>
       </form>
     </div>
     <script>
-      const API_URL = window.location.hostname === "localhost"
-    ? "http://localhost:4000"
-    : "https://barberpi.onrender.com";
+      // Detectar automáticamente la URL base del backend
+      const API_BASE_URL =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:4000"
+          : window.location.origin; // Usa el mismo dominio en producción
 
       document.addEventListener("DOMContentLoaded", () => {
         const form = document.getElementById("login-form");
@@ -46,30 +58,56 @@
         form.addEventListener("submit", async (e) => {
           e.preventDefault();
 
-          const email = document.getElementById("email").value;
-          const contraseña = document.getElementById("password").value;
+          const email = document.getElementById("email").value.trim();
+          const contraseña = document.getElementById("password").value.trim();
+
+          if (!email || !contraseña) {
+            alert("Por favor completa todos los campos");
+            return;
+          }
 
           try {
-            const resp = await fetch(`${API_URL}/login`, {
+            const resp = await fetch(`${API_BASE_URL}/api/auth/login`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email, contraseña }),
             });
 
-            const data = await resp.json();
-
-            if (!resp.ok) {
-              alert(data.error || "Error al iniciar sesión");
+            // Intentar parsear la respuesta
+            let data;
+            try {
+              data = await resp.json();
+            } catch (parseError) {
+              console.error("Error al parsear respuesta:", parseError);
+              alert("Error: el servidor no devolvió una respuesta válida");
               return;
             }
 
+            if (!resp.ok) {
+              console.error("Error del servidor:", resp.status, data);
+              alert(data.error || `Error al iniciar sesión (${resp.status})`);
+              return;
+            }
+
+            // Verificar que el token existe
+            if (!data.token || !data.usuario) {
+              console.error("Respuesta incompleta:", data);
+              alert("Error: respuesta del servidor incompleta");
+              return;
+            }
+
+            // Guardar datos en localStorage
             localStorage.setItem("token", data.token);
             localStorage.setItem("rol", data.usuario.rol);
+            localStorage.setItem("usuario", JSON.stringify(data.usuario));
 
+            console.log("Login exitoso, redirigiendo...");
             redirigirSegunRol(data.usuario.rol);
           } catch (err) {
-            console.error(err);
-            alert("Error de conexión");
+            console.error("Error en fetch login:", err);
+            alert(
+              "Error de conexión. Verifica tu conexión a internet o intenta más tarde."
+            );
           }
         });
       });
@@ -78,11 +116,11 @@
         switch (rol) {
           case "barbero":
           case "admin":
-            window.location.href = "homebarber.html";
+            window.location.href = "/homebarber";
             break;
           case "cliente":
           default:
-            window.location.href = "home.html";
+            window.location.href = "/home";
             break;
         }
       }
