@@ -136,6 +136,18 @@ app.get("/agendar", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "agendar.html"));
 });
 
+app.get("/barber_agenda", (req, res) => {
+  res.sendFile(path.join(__dirname, "templates", "barber_agenda.html"));
+});
+
+app.get("/notibarbero", (req, res) => {
+  res.sendFile(path.join(__dirname, "templates", "notibarbero.html"));
+});
+
+app.get("/notificacion", (req, res) => {
+  res.sendFile(path.join(__dirname, "templates", "notificacion.html"));
+});
+
 // Agrega las demás páginas que tengas...
 app.post("/api/auth/registro", async (req, res) => {
   const { nombre, email, contraseña } = req.body;
