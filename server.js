@@ -8,7 +8,7 @@ import multer from "multer";
 import fs from "fs";
 import { fileURLToPath } from "url";
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 const SECRET = "barberpi_secret_2024";
 
 app.use(
