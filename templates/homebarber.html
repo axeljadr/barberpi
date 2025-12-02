@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Catálogo de Trabajos - Barber Studio</title>
-    <link rel="stylesheet" href="../static/homebarber.css" />
+    <link rel="stylesheet" href="/static/homebarber.css" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -18,7 +18,7 @@
       <div class="block">
         <img
           class="imagen-de-barberia"
-          src="../images/barber.jpg"
+          src="/images/barber.jpg"
           alt="Logo Barber Studio"
         />
       </div>
@@ -35,7 +35,10 @@
         <a href="/notibarbero" class="navigation-pill">
           <span class="title">Notificaciones</span>
         </a>
-        <a href="/" class="navigation-pill">
+        <a href="/clientes" class="navigation-pill">
+          <span class="title">clientes</span>
+        </a>
+        <a href="/login" class="navigation-pill">
           <span class="title">Cerrar Sesión</span>
         </a>
       </nav>
@@ -313,9 +316,15 @@
       </nav>
     </footer>
     <script>
-      const API_AUTH = "http://localhost:4000/api/auth";
-      const API_CATALOG = "http://localhost:4000/api/catalogo";
-      const API_MENSAJES = "http://localhost:4000/api/mensajes";
+      const API_BASE_URL =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:4000"
+          : window.location.origin;
+
+      const API_AUTH = `${API_BASE_URL}/api/auth`;
+      const API_CATALOG = `${API_BASE_URL}/api/catalogo`;
+      const API_MENSAJES = `${API_BASE_URL}/api/mensajes`;
 
       function getToken() {
         return localStorage.getItem("token");
@@ -329,11 +338,11 @@
         switch (rol) {
           case "barbero":
           case "admin":
-            window.location.href = "/barberpi/templates/homebarber.html";
+            window.location.href = "/homebarber";
             break;
           case "cliente":
           default:
-            window.location.href = "/barberpi/templates/home.html";
+            window.location.href = "/home";
             break;
         }
       }
@@ -355,7 +364,7 @@
         // 1) Autenticación y rol
         if (!token) {
           alert("Debes iniciar sesión");
-          window.location.href = "/barberpi/templates/login.html";
+          window.location.href = "/";
           return;
         }
 
@@ -376,7 +385,7 @@
             alert("Sesión expirada. Vuelve a iniciar sesión.");
             localStorage.removeItem("token");
             localStorage.removeItem("rol");
-            window.location.href = "/barberpi/templates/login.html";
+            window.location.href = "/";
             return;
           }
 
@@ -413,7 +422,7 @@
       async function loadMensajesBarbero() {
         const token = getToken();
         const container = document.getElementById("messages-container-barber");
-        container.innerHTML = "<p>Cargando mensajes...</p>";
+        container.innerHTML = "<p>Cargando mensajes.</p>";
 
         try {
           const resp = await fetch(`${API_MENSAJES}/mis-mensajes`, {
