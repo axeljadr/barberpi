@@ -438,26 +438,76 @@ textarea:focus {
   text-decoration: underline;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
+  /* Contenedor del calendario */
+  .calendar-container {
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Centra el calendario en la pantalla */
+    padding: 1rem;
   }
 
-  .navigation-pill-list {
-    margin-top: 1rem;
-  }
-
+  /* Cuadrícula del calendario */
   .calendar-grid {
-    grid-template-columns: repeat(1, 1fr);
+    grid-template-columns: repeat(7, 1fr); /* 7 días por fila */
+    gap: 1px;
+    width: 100%;
+    max-width: 100%;
   }
 
+  /* Día del calendario */
+  .calendar-day {
+    min-height: 80px;
+    padding: 1rem 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Ocultar cabecera de días de la semana */
   .calendar-day-header {
     display: none;
   }
 
+  /* Días del mes actual */
   .calendar-day {
+    background-color: #fff;
+    color: #222;
+  }
+
+  /* Días del mes anterior */
+  .calendar-day.other-month {
+    background-color: transparent;
+    color: #999;
+  }
+
+  /* Día seleccionado */
+  .calendar-day.selected {
+    background-color: #007bff;
+    color: white;
+  }
+}
+
+/* Mobile-specific responsive design */
+@media (max-width: 480px) {
+  .calendar-title {
+    font-size: 1.5rem;
+  }
+
+  .schedule-title {
+    font-size: 1.3rem;
+  }
+
+  .schedule-table th,
+  .schedule-table td {
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+}
     min-height: auto;
   }
 
