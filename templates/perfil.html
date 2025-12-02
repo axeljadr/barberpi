@@ -1,563 +1,549 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Barber Studio - Perfil</title>
-    <link rel="stylesheet" href="/static/perfil.css" />
-  </head>
-  <body>
-    <header class="header">
-      <div class="block">
-        <img
-          class="imagen-de-barberia"
-          src="/images/barber.jpg"
-          alt="Logo Barber Studio"
-        />
-      </div>
-      <nav
-        id="main-nav"
-        class="navigation-pill-list"
-        aria-label="Navegación principal"
-      ></nav>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Perfil — BarberPI</title>
+
+  <!-- ===== Estilos principales ===== -->
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --accent:#2d8cf0;
+      --muted:#666;
+      --success:#2ecc71;
+      --error:#e74c3c;
+      --radius:10px;
+      --gap:16px;
+      font-family: Inter, Roboto, Arial, sans-serif;
+    }
+
+    html,body{height:100%;margin:0;background:var(--bg);color:#111}
+    .container{max-width:1100px;margin:28px auto;padding:18px;}
+
+    /* NAV */
+    header { margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; }
+    .brand img { width:44px; height:44px; border-radius:8px; object-fit:cover; }
+    .brand h1 { font-size:18px; margin:0; }
+
+    nav#main-nav { display:flex; gap:8px; flex-wrap:wrap; }
+    .navigation-pill { display:inline-flex; align-items:center; padding:8px 12px; background:var(--card); border-radius:999px; text-decoration:none; color:#222; box-shadow: 0 3px 10px rgba(12,12,12,0.04); }
+    .navigation-pill .title { font-size:14px; }
+
+    /* Layout */
+    .grid { display:flex; gap:24px; align-items:flex-start; }
+    .col-left { width:320px; min-width:220px; }
+    .col-right { flex:1; }
+
+    /* Card */
+    .card { background:var(--card); border-radius:var(--radius); padding:18px; box-shadow: 0 8px 28px rgba(12,12,12,0.06); }
+
+    /* Perfil display */
+    .profile-hero { display:flex; gap:14px; align-items:center; }
+    .profile-hero img { width:84px; height:84px; border-radius:12px; object-fit:cover; border:3px solid #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+    .profile-info { display:flex; flex-direction:column; }
+    .profile-info .name { font-size:18px; font-weight:700; }
+    .profile-info .meta { color:var(--muted); font-size:14px; margin-top:6px; }
+
+    /* Form */
+    form .row { display:flex; gap:12px; margin-bottom:12px; }
+    form label { font-size:13px; color:var(--muted); margin-bottom:6px; display:block; }
+    input[type="text"], input[type="email"], input[type="number"], select, textarea {
+      width:100%; padding:10px 12px; border-radius:8px; border:1px solid #e6e6e9; background: #fff; font-size:14px;
+    }
+    .form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+    .btn { padding:10px 14px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
+    .btn.primary { background:var(--accent); color:white; }
+    .btn.ghost { background:transparent; border:1px solid #ddd; color:#333; }
+
+    /* Upload preview */
+    .file-row { display:flex; gap:12px; align-items:center; }
+    .file-name { font-size:13px; color:var(--muted); }
+
+    /* responsive */
+    @media (max-width:880px){
+      .grid { flex-direction:column; }
+      .col-left { width:100%; }
+    }
+
+    /* ===== Notificaciones (toasts) y modal ===== */
+    #app-notify-root { position: fixed; z-index: 9999; inset: 0; pointer-events: none; }
+    .toast-container { position: fixed; right: 20px; top: 20px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; max-width: 360px; }
+    .app-toast { display:flex; gap:10px; align-items:center; background:#fff; color:#111; padding:10px 12px; border-radius:8px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); font-family: Inter, Roboto, Arial; border-left:6px solid; animation: toast-in .18s ease; }
+    .app-toast .msg { flex:1; font-size:14px; line-height:1.2; }
+    .app-toast .close-btn { background:transparent; border:none; cursor:pointer; font-weight:700; padding:4px 6px; color:#666; }
+    .app-toast.success { border-color: var(--success); }
+    .app-toast.error { border-color: var(--error); }
+    .app-toast.warning { border-color: #f39c12; }
+    .app-toast.info { border-color: #3498db; }
+    @keyframes toast-in { from { transform: translateY(-6px); opacity:0 } to { transform: translateY(0); opacity:1 } }
+
+    .app-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index: 10000; }
+    .app-modal { background:#fff; padding:18px; border-radius:10px; width: 92%; max-width:520px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); font-family: Inter, Roboto, Arial; }
+    .app-modal h3 { margin: 0 0 8px 0; font-size:18px; }
+    .app-modal p { margin:0 0 14px 0; color:#333; font-size:14px; }
+    .app-modal .row { display:flex; gap:10px; justify-content:flex-end; }
+    .app-btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; font-weight:600; }
+    .app-btn.primary { background:var(--accent); color:white; }
+    .app-btn.ghost { background:transparent; border:1px solid #ddd; color:#333; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header / Nav -->
+    <header>
+      <a class="brand" href="/">
+        <!-- put your logo or image in /images/logo.png -->
+        <img src="/images/logo-64.png" alt="logo" onerror="this.style.display='none'"/>
+        <h1>BarberPI</h1>
+      </a>
+
+      <nav id="main-nav" aria-label="Main navigation">
+        <!-- Navigation pills rendered by JS según rol -->
+      </nav>
     </header>
 
-    <main class="main-content">
-      <div class="profile-container">
-        <div class="profile-header">
-          <div class="photo-upload">
-            <img
-              id="profile-picture"
-              class="profile-picture"
-              src="/images/avatardefault.webp"
-              alt="Foto de perfil"
-            />
-            <button
-              type="button"
-              class="btn btn-secondary"
-              onclick="openPhotoModal()"
-            >
-              Cambiar foto
-            </button>
+    <main class="grid">
+      <!-- Left card: profile summary -->
+      <aside class="col-left">
+        <div class="card">
+          <div class="profile-hero">
+            <img id="profile-picture" src="/images/default-avatar.jpg" alt="Foto de perfil"/>
+            <div class="profile-info">
+              <div id="display-name" class="name">Cargando...</div>
+              <div class="meta">
+                <div id="display-role">-</div>
+                <div id="display-id">ID: -</div>
+              </div>
+            </div>
           </div>
-          <div class="profile-info">
-            <h1 class="profile-name" id="display-name">:</h1>
-            <p class="profile-role" id="display-role">Cliente</p>
-            <p class="profile-id">ID: <span id="display-id">#</span></p>
+
+          <hr style="margin:14px 0; border:none; height:1px; background:#f0f0f3;">
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn primary" type="button" onclick="openPhotoModal()">Cambiar foto</button>
+            <button class="btn ghost" type="button" onclick="window.location.href='/'">Cerrar sesión</button>
           </div>
         </div>
+      </aside>
 
-        <form id="profile-form" class="profile-form">
-          <input type="hidden" id="id_usuario" name="id_usuario" value="" />
+      <!-- Right card: profile form -->
+      <section class="col-right">
+        <div class="card">
+          <h2>Mi información</h2>
+          <form id="profile-form" aria-label="Formulario de perfil">
+            <input type="hidden" id="id_usuario" name="id_usuario" />
 
-          <div class="form-group">
-            <label for="nombre">Nombre</label>
-            <input type="text" id="nombre" name="nombre" value="" />
-          </div>
+            <div class="row">
+              <div style="flex:1">
+                <label for="nombre">Nombre</label>
+                <input id="nombre" type="text" name="nombre" />
+              </div>
+              <div style="width:150px">
+                <label for="edad">Edad</label>
+                <input id="edad" type="number" name="edad" min="0" />
+              </div>
+            </div>
 
-          <div class="form-group">
-            <label for="apellidoP">Apellido Paterno</label>
-            <input type="text" id="apellidoP" name="apellidoP" />
-          </div>
+            <div class="row">
+              <div style="flex:1">
+                <label for="apellidoP">Apellido Paterno</label>
+                <input id="apellidoP" type="text" name="apellidoP" />
+              </div>
+              <div style="flex:1">
+                <label for="apellidoM">Apellido Materno</label>
+                <input id="apellidoM" type="text" name="apellidoM" />
+              </div>
+            </div>
 
-          <div class="form-group">
-            <label for="apellidoM">Apellido Materno</label>
-            <input type="text" id="apellidoM" name="apellidoM" />
-          </div>
+            <div class="row">
+              <div style="flex:1">
+                <label for="email">Email</label>
+                <input id="email" type="email" name="email" />
+              </div>
+              <div style="flex:1">
+                <label for="telefono">Teléfono</label>
+                <input id="telefono" type="text" name="telefono" />
+              </div>
+            </div>
 
-          <div class="form-group">
-            <label for="edad">Edad</label>
-            <input type="number" id="edad" name="edad" min="7" max="100" />
-          </div>
+            <div style="margin-bottom:12px;">
+              <label for="rol">Rol</label>
+              <select id="rol" name="rol">
+                <option value="cliente">Cliente</option>
+                <option value="barbero">Barbero</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
 
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" />
-          </div>
-
-          <div class="form-group">
-            <label for="telefono">Teléfono</label>
-            <input type="tel" id="telefono" name="telefono" />
-          </div>
-
-          <div class="form-group">
-            <label for="rol">Rol</label>
-            <select id="rol" name="rol" required>
-              <option value="cliente">Cliente</option>
-              <option value="barbero">Barbero</option>
-              <option value="admin">Administrador</option>
-            </select>
-          </div>
-          <div class="form-actions">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              onclick="resetForm()"
-            >
-              Cancelar
-            </button>
-            <button type="submit" class="btn btn-primary">
-              Guardar Cambios
-            </button>
-          </div>
-        </form>
-      </div>
+            <div class="form-actions">
+              <button type="button" class="btn ghost" onclick="resetFormPerfil()">Restablecer</button>
+              <button type="submit" class="btn primary">Guardar cambios</button>
+            </div>
+          </form>
+        </div>
+      </section>
     </main>
-    <div id="photo-modal" class="modal" style="display: none">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Cambiar Foto de Perfil</h2>
-          <button class="close-btn" onclick="closePhotoModal()">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="photo-preview-container">
-            <img
-              id="photo-preview"
-              class="photo-preview"
-              src="/images/avatardefault.webp"
-              alt="Vista previa"
-            />
+
+  </div>
+
+  <!-- Contenedor para toasts y modal -->
+  <div id="app-notify-root">
+    <div id="app-toast-container" class="toast-container"></div>
+    <div id="app-modal-container"></div>
+  </div>
+
+  <!-- Modal para subir foto (visualmente simple, controlado por JS) -->
+  <div id="photo-modal" style="display:none; position:fixed; inset:0; z-index:12000; align-items:center; justify-content:center; background: rgba(0,0,0,0.45);">
+    <div style="width:92%; max-width:520px; background:#fff; border-radius:10px; padding:16px;">
+      <h3 style="margin:0 0 8px 0;">Subir foto de perfil</h3>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <img id="photo-preview" src="/images/default-avatar.jpg" alt="Preview" style="width:86px; height:86px; border-radius:10px; object-fit:cover;">
+        <div style="flex:1;">
+          <div class="file-row">
+            <input id="photo-file-input" type="file" accept="image/*" style="display:block;" />
+            <div id="file-name" class="file-name">Ningún archivo seleccionado</div>
           </div>
-          <div class="file-input-wrapper">
-            <input
-              type="file"
-              id="photo-file-input"
-              accept="image/*"
-              style="display: none"
-            />
-            <button
-              type="button"
-              class="btn btn-secondary"
-              onclick="document.getElementById('photo-file-input').click()"
-            >
-              <i class="fa-solid fa-image"></i> Seleccionar imagen
-            </button>
-            <p id="file-name" class="file-name-display">
-              Ningún archivo seleccionado
-            </p>
+          <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
+            <button class="btn ghost" type="button" onclick="closePhotoModal()">Cancelar</button>
+            <button class="btn primary" type="button" onclick="uploadPhoto()">Subir</button>
           </div>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick="closePhotoModal()"
-          >
-            Cancelar
-          </button>
-          <button type="button" class="btn btn-primary" onclick="uploadPhoto()">
-            <i class="fa-solid fa-upload"></i> Subir foto
-          </button>
         </div>
       </div>
     </div>
-    <footer class="footer">
-      <div class="footer-logo">
-        <img
-          class="imagen-de-barberia"
-          src="/images/barber.jpg"
-          alt="Barber Studio Logo"
-        />
-      </div>
-      <nav class="text-link-list" aria-labelledby="footer-contact">
-        <div class="text-strong-wrapper">
-          <h2 id="footer-contact" class="text-strong">
-            <span class="text-strong-2">contacto</span>
-          </h2>
-        </div>
-        <ul class="footer-list">
-          <li class="text-link-list-item">
-            <a href="tel:9837324637" class="list-item">9837324637</a>
-          </li>
-          <li class="text-link-list-item">
-            <a href="mailto:barberpi@utttn.mx" class="list-item-2"
-              >barberpi@utttn.mx</a
-            >
-          </li>
-        </ul>
-      </nav>
-      <nav class="text-link-list" aria-labelledby="footer-location">
-        <div class="text-strong-wrapper">
-          <h2 id="footer-location" class="text-strong">
-            <span class="text-strong-2">ubicación</span>
-          </h2>
-        </div>
-        <ul class="footer-list">
-          <li class="text-link-list-item">
-            <a
-              href="https://maps.app.goo.gl/ZD5gur5vPiwKMVCW9?g_st=iw"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="list-item-7"
-              >google.maps/micasa</a
-            >
-          </li>
-        </ul>
-      </nav>
-      <nav class="text-link-list" aria-labelledby="footer-creator">
-        <div class="text-strong-wrapper">
-          <h2 id="footer-creator" class="text-strong">
-            <span class="">creado por:</span>
-          </h2>
-        </div>
-        <ul class="footer-list">
-          <li class="text-link-list-item">
-            <span class="list-item-11">Axel Rivera</span>
-          </li>
-          <li class="text-link-list-item">
-            <span class="list-item-12">contactos:</span>
-          </li>
-          <li class="text-link-list-item">
-            <a href="mailto:axel.delgado@uttn.mx" class="list-item-13"
-              >axel.delgado@uttn.mx</a
-            >
-          </li>
-          <li class="text-link-list-item">
-            <a href="tel:8994287620" class="list-item">8994287620</a>
-          </li>
-        </ul>
-      </nav>
-    </footer>
-    <script>
-  // Detectar base API: si estamos en localhost usar el puerto 4000 (backend local),
-  // en producción usar window.location.origin (o el host donde se sirve el frontend).
-  const API_BASE =
-    window.location.hostname.includes("localhost") || window.location.hostname === "127.0.0.1"
-      ? "http://localhost:4000"
-      : window.location.origin;
+  </div>
 
-  const API_AUTH = `${API_BASE}/api/auth`;
+  <!-- ===== Script: notificaciones helpers + perfil logic (sin alerts) ===== -->
+  <script>
+  /* ------- Helpers de notificaciones (toast/modal) usando los elementos del DOM ------- */
+  (function notifyHelpers() {
+    const toastContainer = document.getElementById("app-toast-container");
+    const modalContainer = document.getElementById("app-modal-container");
 
-  function getToken() {
-    return localStorage.getItem("token");
-  }
+    window.showToast = function (text = "", type = "info", timeout = 3500) {
+      return new Promise((resolve) => {
+        if (!toastContainer) { console.warn("Toast container missing:", text); return resolve(); }
+        const wrap = document.createElement("div");
+        wrap.className = `app-toast ${type}`;
+        wrap.innerHTML = `<div class="msg">${text}</div><button class="close-btn" aria-label="close">&times;</button>`;
+        const closeBtn = wrap.querySelector(".close-btn");
+        let removed = false;
+        const cleanup = () => {
+          if (removed) return;
+          removed = true;
+          wrap.style.opacity = "0";
+          setTimeout(() => { try { toastContainer.removeChild(wrap); } catch (e) {} resolve(); }, 180);
+        };
+        closeBtn.addEventListener("click", cleanup);
+        toastContainer.appendChild(wrap);
+        setTimeout(cleanup, timeout || 3500);
+      });
+    };
 
-  function getRol() {
-    return localStorage.getItem("rol");
-  }
+    window.showConfirm = function (title = "Confirmar", message = "") {
+      return new Promise((resolve) => {
+        if (!modalContainer) { console.warn("Modal container missing:", title, message); return resolve(false); }
+        const backdrop = document.createElement("div");
+        backdrop.className = "app-modal-backdrop";
+        backdrop.innerHTML = `
+          <div class="app-modal" role="dialog" aria-modal="true">
+            <h3>${title}</h3>
+            <p>${message}</p>
+            <div class="row">
+              <button class="app-btn ghost" id="app-cancel-btn">Cancelar</button>
+              <button class="app-btn primary" id="app-ok-btn">Aceptar</button>
+            </div>
+          </div>
+        `;
+        modalContainer.appendChild(backdrop);
+        const ok = backdrop.querySelector("#app-ok-btn");
+        const cancel = backdrop.querySelector("#app-cancel-btn");
+        const cleanup = (value) => { try { modalContainer.removeChild(backdrop); } catch (e) {} resolve(Boolean(value)); };
+        cancel.addEventListener("click", () => cleanup(false));
+        ok.addEventListener("click", () => cleanup(true));
+        backdrop.addEventListener("click", (ev) => { if (ev.target === backdrop) cleanup(false); });
+      });
+    };
+  })();
 
-  let currentUser = null;
-  let currentRol = null;
-  let selectedPhotoFile = null;
+  /* ------- Script perfil (sin alert()) ------- */
+  (function perfilScript() {
+    const API_BASE =
+      window.location.hostname.includes("localhost") || window.location.hostname === "127.0.0.1"
+        ? "http://localhost:4000"
+        : window.location.origin;
 
-  const nav_by_rol = {
-    cliente: [
-      { href: "/perfil", label: "Mi Información" },
-      { href: "/home", label: "Inicio" },
-      { href: "/agendar", label: "Agendar Cita" },
-      { href: "/notificacion", label: "Notificaciones" },
-      { href: "/", label: "Cerrar Sesión" },
-    ],
-    barbero: [
-      { href: "/perfil", label: "Mi Información" },
-      { href: "/homebarber", label: "Inicio" },
-      { href: "/barber_agenda", label: "Agenda" },
-      { href: "/notibarbero", label: "Notificaciones" },
-      { href: "/", label: "Cerrar Sesión" },
-    ],
-    admin: [
-      { href: "/perfil", label: "Mi Información" },
-      { href: "/homebarber", label: "Inicio" },
-      { href: "/barber_agenda", label: "Agenda" },
-      { href: "/notibarbero", label: "Notificaciones" },
-      { href: "/", label: "Cerrar Sesión" },
-    ],
-  };
+    const API_AUTH = `${API_BASE}/api/auth`;
 
-  function renderNavByRole(role) {
-    const nav = document.getElementById("main-nav");
-    if (!nav) return;
+    function getToken() { return localStorage.getItem("token"); }
+    function getRol() { return localStorage.getItem("rol"); }
 
-    const items = nav_by_rol[role] || nav_by_rol["cliente"];
+    let currentUser = null;
+    let currentRol = null;
+    let selectedPhotoFile = null;
 
-    nav.innerHTML = "";
+    const nav_by_rol = {
+      cliente: [
+        { href: "/perfil", label: "Mi Información" },
+        { href: "/home", label: "Inicio" },
+        { href: "/agendar", label: "Agendar Cita" },
+        { href: "/notificacion", label: "Notificaciones" },
+        { href: "/", label: "Cerrar Sesión" },
+      ],
+      barbero: [
+        { href: "/perfil", label: "Mi Información" },
+        { href: "/homebarber", label: "Inicio" },
+        { href: "/barber_agenda", label: "Agendar" },
+        { href: "/notibarbero", label: "Notificaciones" },
+        { href: "/", label: "Cerrar Sesión" },
+      ],
+      admin: [
+        { href: "/perfil", label: "Mi Información" },
+        { href: "/homebarber", label: "Inicio" },
+        { href: "/barber_agenda", label: "Agendar" },
+        { href: "/notibarbero", label: "Notificaciones" },
+        { href: "/", label: "Cerrar Sesión" },
+      ],
+    };
 
-    items.forEach((item) => {
-      const a = document.createElement("a");
-      a.className = "navigation-pill";
-      a.href = item.href || "#";
-      const span = document.createElement("span");
-      span.className = "title";
-      span.textContent = item.label;
-      a.appendChild(span);
-      nav.appendChild(a);
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", async function () {
-    const token = getToken();
-    const rol = getRol();
-    currentRol = rol;
-
-    if (!token) {
-      alert("Debes iniciar sesión");
-      // Redirigir al login (ruta raíz en nuestro server)
-      window.location.href = "/";
-      return;
+    function renderNavByRole(role) {
+      const nav = document.getElementById("main-nav");
+      if (!nav) return;
+      const items = nav_by_rol[role] || nav_by_rol["cliente"];
+      nav.innerHTML = "";
+      items.forEach((item) => {
+        const a = document.createElement("a");
+        a.className = "navigation-pill";
+        a.href = item.href || "#";
+        const span = document.createElement("span");
+        span.className = "title";
+        span.textContent = item.label;
+        a.appendChild(span);
+        nav.appendChild(a);
+      });
     }
 
-    try {
-      const resp = await fetch(`${API_AUTH}/perfil`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    document.addEventListener("DOMContentLoaded", async function () {
+      const token = getToken();
+      const rol = getRol();
+      currentRol = rol;
 
-      if (resp.status === 401) {
-        alert("Sesión expirada. Vuelve a iniciar sesión.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("rol");
+      if (!token) {
+        await showToast("Debes iniciar sesión", "warning", 1400);
         window.location.href = "/";
         return;
       }
 
-      if (!resp.ok) {
+      try {
+        const resp = await fetch(`${API_AUTH}/perfil`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (resp.status === 401) {
+          await showToast("Sesión expirada. Vuelve a iniciar sesión.", "warning", 1500);
+          localStorage.removeItem("token");
+          localStorage.removeItem("rol");
+          window.location.href = "/";
+          return;
+        }
+
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          await showToast(data.error || "No se pudo cargar el perfil", "error", 2200);
+          return;
+        }
+
+        currentUser = await resp.json();
+        if (!currentRol && currentUser && currentUser.rol) {
+          currentRol = currentUser.rol;
+          localStorage.setItem("rol", currentRol);
+        }
+
+        renderNavByRole(currentRol);
+        loadUserDataFromBackend(currentUser);
+        configureRoleFieldByPermission();
+
+        const fileInput = document.getElementById("photo-file-input");
+        if (fileInput) {
+          fileInput.addEventListener("change", function (e) {
+            if (e.target.files && e.target.files[0]) {
+              selectedPhotoFile = e.target.files[0];
+              const fileNameEl = document.getElementById("file-name");
+              if (fileNameEl) fileNameEl.textContent = selectedPhotoFile.name;
+              const reader = new FileReader();
+              reader.onload = function (e2) {
+                const preview = document.getElementById("photo-preview");
+                if (preview) preview.src = e2.target.result;
+              };
+              reader.readAsDataURL(selectedPhotoFile);
+            }
+          });
+        }
+
+        const form = document.getElementById("profile-form");
+        if (form) {
+          form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            saveUserDataToBackend();
+          });
+        }
+      } catch (err) {
+        console.error("Error al cargar perfil:", err);
+        await showToast("Error de conexión al cargar tu perfil", "error", 2200);
+      }
+    });
+
+    function loadUserDataFromBackend(user) {
+      if (!user) return;
+      const setIf = (id, value) => { const el = document.getElementById(id); if (el) el.value = value ?? ""; };
+      setIf("id_usuario", user.id_usuario);
+      setIf("nombre", user.nombre || "");
+      setIf("apellidoP", user.apellidoP || "");
+      setIf("apellidoM", user.apellidoM || "");
+      setIf("edad", user.edad ?? "");
+      setIf("email", user.email || "");
+      setIf("telefono", user.telefono || "");
+      setIf("rol", user.rol || "cliente");
+      updateDisplay(user);
+    }
+
+    function updateDisplay(user) {
+      const nombreCompleto = `${user.nombre || ""} ${user.apellidoP || ""} ${user.apellidoM || ""}`.trim();
+      const displayNameEl = document.getElementById("display-name");
+      if (displayNameEl) displayNameEl.textContent = nombreCompleto || "Ingresa tus datos";
+      const displayRoleEl = document.getElementById("display-role");
+      if (displayRoleEl) {
+        const rolStr = (user.rol || "cliente");
+        displayRoleEl.textContent = rolStr.charAt(0).toUpperCase() + rolStr.slice(1);
+      }
+      const displayIdEl = document.getElementById("display-id");
+      if (displayIdEl) displayIdEl.textContent = user.id_usuario || "-";
+      const fotoUrl = user.foto_perfil || "/images/default-avatar.jpg";
+      const fotoCompleta = fotoUrl.startsWith("http") ? fotoUrl : `${API_BASE}${fotoUrl}`;
+      const profilePic = document.getElementById("profile-picture");
+      const preview = document.getElementById("photo-preview");
+      if (profilePic) profilePic.src = fotoCompleta;
+      if (preview) preview.src = fotoCompleta;
+    }
+
+    function configureRoleFieldByPermission() {
+      const rolSelect = document.getElementById("rol");
+      if (!rolSelect) return;
+      if (currentRol === "admin") rolSelect.disabled = false; else rolSelect.disabled = true;
+    }
+
+    function openPhotoModal() {
+      const modal = document.getElementById("photo-modal");
+      if (!modal) return;
+      modal.style.display = "flex";
+      selectedPhotoFile = null;
+      const fileNameEl = document.getElementById("file-name"); if (fileNameEl) fileNameEl.textContent = "Ningún archivo seleccionado";
+      const fileInput = document.getElementById("photo-file-input"); if (fileInput) fileInput.value = "";
+      const fotoActual = currentUser && currentUser.foto_perfil ? currentUser.foto_perfil : "/images/default-avatar.jpg";
+      const fotoCompleta = fotoActual.startsWith("http") ? fotoActual : `${API_BASE}${fotoActual}`;
+      const preview = document.getElementById("photo-preview");
+      if (preview) preview.src = fotoCompleta;
+    }
+
+    function closePhotoModal() {
+      const modal = document.getElementById("photo-modal");
+      if (!modal) return;
+      modal.style.display = "none";
+      selectedPhotoFile = null;
+      const fileNameEl = document.getElementById("file-name"); if (fileNameEl) fileNameEl.textContent = "Ningún archivo seleccionado";
+      const fileInput = document.getElementById("photo-file-input"); if (fileInput) fileInput.value = "";
+    }
+
+    async function uploadPhoto() {
+      if (!selectedPhotoFile) {
+        await showToast("Por favor, selecciona una imagen primero", "warning", 1600);
+        return;
+      }
+      const token = getToken();
+      if (!token) {
+        await showToast("Debes iniciar sesión", "warning", 1400);
+        window.location.href = "/";
+        return;
+      }
+      const formData = new FormData();
+      formData.append("foto", selectedPhotoFile);
+      try {
+        const resp = await fetch(`${API_AUTH}/perfil/foto`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
         const data = await resp.json().catch(() => ({}));
-        alert(data.error || "No se pudo cargar el perfil");
+        if (!resp.ok) {
+          await showToast(data.error || "Error al subir la foto", "error", 2200);
+          return;
+        }
+        currentUser.foto_perfil = data.foto_perfil || data.url || currentUser.foto_perfil;
+        updateDisplay(currentUser);
+        closePhotoModal();
+        await showToast("Foto de perfil actualizada correctamente", "success", 1500);
+      } catch (err) {
+        console.error("Error al subir foto:", err);
+        await showToast("Error de conexión al subir la foto", "error", 2000);
+      }
+    }
+
+    async function saveUserDataToBackend() {
+      const token = getToken();
+      if (!token) {
+        await showToast("Debes iniciar sesión", "warning", 1400);
+        window.location.href = "/";
         return;
       }
-
-      currentUser = await resp.json();
-      // Si no había rol en localStorage, usar el del backend
-      if (!currentRol && currentUser && currentUser.rol) {
-        currentRol = currentUser.rol;
-        localStorage.setItem("rol", currentRol);
-      }
-
-      renderNavByRole(currentRol);
-      loadUserDataFromBackend(currentUser);
-      configureRoleFieldByPermission();
-
-      const fileInput = document.getElementById("photo-file-input");
-      if (fileInput) {
-        fileInput.addEventListener("change", function (e) {
-          if (e.target.files && e.target.files[0]) {
-            selectedPhotoFile = e.target.files[0];
-            const fileNameEl = document.getElementById("file-name");
-            if (fileNameEl) fileNameEl.textContent = selectedPhotoFile.name;
-
-            const reader = new FileReader();
-            reader.onload = function (e2) {
-              const preview = document.getElementById("photo-preview");
-              if (preview) preview.src = e2.target.result;
-            };
-            reader.readAsDataURL(selectedPhotoFile);
-          }
-        });
-      }
-
-      const form = document.getElementById("profile-form");
-      if (form) {
-        form.addEventListener("submit", function (e) {
-          e.preventDefault();
-          saveUserDataToBackend();
-        });
-      }
-    } catch (err) {
-      console.error("Error al cargar perfil:", err);
-      alert("Error de conexión al cargar tu perfil");
-    }
-  });
-
-  function loadUserDataFromBackend(user) {
-    if (!user) return;
-    const setIf = (id, value) => {
-      const el = document.getElementById(id);
-      if (el) el.value = value ?? "";
-    };
-
-    setIf("id_usuario", user.id_usuario);
-    setIf("nombre", user.nombre || "");
-    setIf("apellidoP", user.apellidoP || "");
-    setIf("apellidoM", user.apellidoM || "");
-    setIf("edad", user.edad ?? "");
-    setIf("email", user.email || "");
-    setIf("telefono", user.telefono || "");
-    setIf("rol", user.rol || "cliente");
-
-    updateDisplay(user);
-  }
-
-  function updateDisplay(user) {
-    const nombreCompleto = `${user.nombre || ""} ${user.apellidoP || ""} ${user.apellidoM || ""}`.trim();
-
-    const displayNameEl = document.getElementById("display-name");
-    if (displayNameEl) displayNameEl.textContent = nombreCompleto || "Ingresa tus datos";
-
-    const displayRoleEl = document.getElementById("display-role");
-    if (displayRoleEl) {
-      const rolStr = (user.rol || "cliente");
-      displayRoleEl.textContent = rolStr.charAt(0).toUpperCase() + rolStr.slice(1);
-    }
-
-    const displayIdEl = document.getElementById("display-id");
-    if (displayIdEl) displayIdEl.textContent = user.id_usuario || "-";
-
-    const fotoUrl = user.foto_perfil || "/images/default-avatar.jpg";
-    const fotoCompleta = fotoUrl.startsWith("http") ? fotoUrl : `${API_BASE}${fotoUrl}`;
-
-    const profilePic = document.getElementById("profile-picture");
-    const preview = document.getElementById("photo-preview");
-    if (profilePic) profilePic.src = fotoCompleta;
-    if (preview) preview.src = fotoCompleta;
-  }
-
-  function configureRoleFieldByPermission() {
-    const rolSelect = document.getElementById("rol");
-    if (!rolSelect) return;
-
-    if (currentRol === "admin") {
-      rolSelect.disabled = false;
-    } else {
-      rolSelect.disabled = true;
-    }
-  }
-
-  function openPhotoModal() {
-    const modal = document.getElementById("photo-modal");
-    if (!modal) return;
-    modal.style.display = "flex";
-    selectedPhotoFile = null;
-    const fileNameEl = document.getElementById("file-name");
-    if (fileNameEl) fileNameEl.textContent = "Ningún archivo seleccionado";
-    const fileInput = document.getElementById("photo-file-input");
-    if (fileInput) fileInput.value = "";
-
-    const fotoActual = currentUser && currentUser.foto_perfil ? currentUser.foto_perfil : "/images/default-avatar.jpg";
-    const fotoCompleta = fotoActual.startsWith("http") ? fotoActual : `${API_BASE}${fotoActual}`;
-    const preview = document.getElementById("photo-preview");
-    if (preview) preview.src = fotoCompleta;
-  }
-
-  function closePhotoModal() {
-    const modal = document.getElementById("photo-modal");
-    if (!modal) return;
-    modal.style.display = "none";
-    selectedPhotoFile = null;
-    const fileNameEl = document.getElementById("file-name");
-    if (fileNameEl) fileNameEl.textContent = "Ningún archivo seleccionado";
-    const fileInput = document.getElementById("photo-file-input");
-    if (fileInput) fileInput.value = "";
-  }
-
-  async function uploadPhoto() {
-    if (!selectedPhotoFile) {
-      alert("Por favor, selecciona una imagen primero");
-      return;
-    }
-
-    const token = getToken();
-    if (!token) {
-      alert("Debes iniciar sesión");
-      window.location.href = "/";
-      return;
-    }
-
-    const formData = new FormData();
-    // El backend debe esperar el campo 'foto' o 'file' según tu implementación
-    formData.append("foto", selectedPhotoFile);
-
-    try {
-      // Nota: si tu backend usa otro endpoint para subir foto (por ejemplo /api/auth/perfil/foto)
-      // ajusta la ruta aquí. Este script usa /api/auth/perfil/foto por compatibilidad con lo que tenías.
-      const resp = await fetch(`${API_AUTH}/perfil/foto`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const data = await resp.json().catch(() => ({}));
-
-      if (!resp.ok) {
-        alert(data.error || "Error al subir la foto");
-        return;
-      }
-
-      // backend debe devolver la URL en data.foto_perfil
-      currentUser.foto_perfil = data.foto_perfil || data.url || currentUser.foto_perfil;
-      updateDisplay(currentUser);
-
-      closePhotoModal();
-      alert("Foto de perfil actualizada correctamente");
-    } catch (err) {
-      console.error("Error al subir foto:", err);
-      alert("Error de conexión al subir la foto");
-    }
-  }
-
-  async function saveUserDataToBackend() {
-    const token = getToken();
-    if (!token) {
-      alert("Debes iniciar sesión");
-      window.location.href = "/";
-      return;
-    }
-
-    const body = {
-      nombre: document.getElementById("nombre") ? document.getElementById("nombre").value.trim() : "",
-      apellidoP: document.getElementById("apellidoP") ? document.getElementById("apellidoP").value.trim() : "",
-      apellidoM: document.getElementById("apellidoM") ? document.getElementById("apellidoM").value.trim() : "",
-      edad: (() => {
-        const v = document.getElementById("edad") ? document.getElementById("edad").value : "";
-        const n = parseInt(v, 10);
-        return isNaN(n) ? null : n;
-      })(),
-      email: document.getElementById("email") ? document.getElementById("email").value.trim() : "",
-      telefono: document.getElementById("telefono") ? document.getElementById("telefono").value.trim() : "",
-      foto_perfil: currentUser ? currentUser.foto_perfil : null,
-      rol: currentRol === "admin" && document.getElementById("rol") ? document.getElementById("rol").value : (currentUser ? currentUser.rol : "cliente"),
-    };
-
-    try {
-      const resp = await fetch(`${API_AUTH}/perfil`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      const data = await resp.json().catch(() => ({}));
-
-      if (!resp.ok) {
-        alert(data.error || "No se pudo actualizar el perfil");
-        return;
-      }
-
-      // Actualizar estado local
-      currentUser = {
-        ...currentUser,
-        ...body,
+      const body = {
+        nombre: document.getElementById("nombre") ? document.getElementById("nombre").value.trim() : "",
+        apellidoP: document.getElementById("apellidoP") ? document.getElementById("apellidoP").value.trim() : "",
+        apellidoM: document.getElementById("apellidoM") ? document.getElementById("apellidoM").value.trim() : "",
+        edad: (() => { const v = document.getElementById("edad") ? document.getElementById("edad").value : ""; const n = parseInt(v,10); return isNaN(n) ? null : n; })(),
+        email: document.getElementById("email") ? document.getElementById("email").value.trim() : "",
+        telefono: document.getElementById("telefono") ? document.getElementById("telefono").value.trim() : "",
+        foto_perfil: currentUser ? currentUser.foto_perfil : null,
+        rol: currentRol === "admin" && document.getElementById("rol") ? document.getElementById("rol").value : (currentUser ? currentUser.rol : "cliente"),
       };
 
-      updateDisplay(currentUser);
-
-      // Si el admin cambió su propio rol, actualizar localStorage
-      if (currentRol === "admin" && currentUser.rol && currentUser.rol !== currentRol) {
-        localStorage.setItem("rol", currentUser.rol);
-        currentRol = currentUser.rol;
-        configureRoleFieldByPermission();
+      try {
+        const resp = await fetch(`${API_AUTH}/perfil`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+          await showToast(data.error || "No se pudo actualizar el perfil", "error", 2200);
+          return;
+        }
+        currentUser = { ...currentUser, ...body };
+        updateDisplay(currentUser);
+        if (currentRol === "admin" && currentUser.rol && currentUser.rol !== currentRol) {
+          localStorage.setItem("rol", currentUser.rol);
+          currentRol = currentUser.rol;
+          configureRoleFieldByPermission();
+        }
+        await showToast("Perfil actualizado correctamente", "success", 1500);
+      } catch (err) {
+        console.error("Error al actualizar perfil:", err);
+        await showToast("Error de conexión al actualizar el perfil", "error", 2000);
       }
-
-      alert("Perfil actualizado correctamente");
-    } catch (err) {
-      console.error("Error al actualizar perfil:", err);
-      alert("Error de conexión al actualizar el perfil");
     }
-  }
 
-  function resetForm() {
-    if (currentUser) {
-      loadUserDataFromBackend(currentUser);
-      configureRoleFieldByPermission();
-    }
-  }
-    </script>
-  </body>
+    function resetForm() { if (currentUser) { loadUserDataFromBackend(currentUser); configureRoleFieldByPermission(); } }
+
+    // Exponer funciones para botones en HTML
+    window.openPhotoModal = openPhotoModal;
+    window.closePhotoModal = closePhotoModal;
+    window.uploadPhoto = uploadPhoto;
+    window.saveUserDataToBackend = saveUserDataToBackend;
+    window.resetFormPerfil = resetForm;
+  })();
+  </script>
+</body>
 </html>
