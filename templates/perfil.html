@@ -7,68 +7,6 @@
 
   <!-- ===== Estilos principales ===== -->
   <style>
-    :root{
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --accent:#2d8cf0;
-      --muted:#666;
-      --success:#2ecc71;
-      --error:#e74c3c;
-      --radius:10px;
-      --gap:16px;
-      font-family: Inter, Roboto, Arial, sans-serif;
-    }
-
-    html,body{height:100%;margin:0;background:var(--bg);color:#111}
-    .container{max-width:1100px;margin:28px auto;padding:18px;}
-
-    /* NAV */
-    header { margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; }
-    .brand img { width:44px; height:44px; border-radius:8px; object-fit:cover; }
-    .brand h1 { font-size:18px; margin:0; }
-
-    nav#main-nav { display:flex; gap:8px; flex-wrap:wrap; }
-    .navigation-pill { display:inline-flex; align-items:center; padding:8px 12px; background:var(--card); border-radius:999px; text-decoration:none; color:#222; box-shadow: 0 3px 10px rgba(12,12,12,0.04); }
-    .navigation-pill .title { font-size:14px; }
-
-    /* Layout */
-    .grid { display:flex; gap:24px; align-items:flex-start; }
-    .col-left { width:320px; min-width:220px; }
-    .col-right { flex:1; }
-
-    /* Card */
-    .card { background:var(--card); border-radius:var(--radius); padding:18px; box-shadow: 0 8px 28px rgba(12,12,12,0.06); }
-
-    /* Perfil display */
-    .profile-hero { display:flex; gap:14px; align-items:center; }
-    .profile-hero img { width:84px; height:84px; border-radius:12px; object-fit:cover; border:3px solid #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
-    .profile-info { display:flex; flex-direction:column; }
-    .profile-info .name { font-size:18px; font-weight:700; }
-    .profile-info .meta { color:var(--muted); font-size:14px; margin-top:6px; }
-
-    /* Form */
-    form .row { display:flex; gap:12px; margin-bottom:12px; }
-    form label { font-size:13px; color:var(--muted); margin-bottom:6px; display:block; }
-    input[type="text"], input[type="email"], input[type="number"], select, textarea {
-      width:100%; padding:10px 12px; border-radius:8px; border:1px solid #e6e6e9; background: #fff; font-size:14px;
-    }
-    .form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
-    .btn { padding:10px 14px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
-    .btn.primary { background:var(--accent); color:white; }
-    .btn.ghost { background:transparent; border:1px solid #ddd; color:#333; }
-
-    /* Upload preview */
-    .file-row { display:flex; gap:12px; align-items:center; }
-    .file-name { font-size:13px; color:var(--muted); }
-
-    /* responsive */
-    @media (max-width:880px){
-      .grid { flex-direction:column; }
-      .col-left { width:100%; }
-    }
-
-    /* ===== Notificaciones (toasts) y modal ===== */
     #app-notify-root { position: fixed; z-index: 9999; inset: 0; pointer-events: none; }
     .toast-container { position: fixed; right: 20px; top: 20px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; max-width: 360px; }
     .app-toast { display:flex; gap:10px; align-items:center; background:#fff; color:#111; padding:10px 12px; border-radius:8px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); font-family: Inter, Roboto, Arial; border-left:6px solid; animation: toast-in .18s ease; }
