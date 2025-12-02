@@ -4,45 +4,41 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Barber Studio - Inicio Cliente</title>
-    <link rel="stylesheet" href="../static/home.css" />
+    <link rel="stylesheet" href="/static/home.css" />
   </head>
   <body>
     <header class="header">
       <div class="block">
         <img
           class="imagen-de-barberia"
-          src="../images/barber.jpg"
+          src="/images/barber.jpg"
           alt="Logo Barber Studio"
         />
       </div>
       <nav class="navigation-pill-list" aria-label="Navegación principal">
-        <a href="../templates/perfil.html" class="navigation-pill">
+        <a href="/perfil" class="navigation-pill">
           <span class="title">Mi Perfil</span>
         </a>
-        <a href="../templates/home.html" class="navigation-pill">
+        <a href="/home" class="navigation-pill">
           <span class="title">Inicio</span>
         </a>
-        <a href="../templates/agendar.html" class="navigation-pill">
+        <a href="/agendar" class="navigation-pill">
           <span class="title">Agendar Cita</span>
         </a>
-        <a href="../templates/notificacion.html" class="navigation-pill">
+        <a href="/notificacion" class="navigation-pill">
           <span class="title">Notificaciones</span>
         </a>
-        <a
-          href="../templates/login.html"
-          class="navigation-pill"
-          id="logout-link"
-        >
+        <a href="/" class="navigation-pill" id="logout-link">
           <span class="title">Cerrar Sesión</span>
         </a>
       </nav>
     </header>
     <main class="main-content">
-      <!-- Mensajes del barbero si los usas -->
+      <!-- Mensajes del barbero -->
       <section class="messages-section">
         <h2 class="section-title">Mensajes de tu barbero</h2>
         <div class="messages-container" id="messages-container">
-          <!-- luego conectamos esto si quieres -->
+          <p>Cargando mensajes...</p>
         </div>
       </section>
 
@@ -52,7 +48,9 @@
         <div class="carousel-container" id="ivan-carousel">
           <button class="carousel-btn" id="ivan-prev">←</button>
           <div class="carousel-viewport">
-            <div class="carousel-track" id="ivan-track"></div>
+            <div class="carousel-track" id="ivan-track">
+              <p>Cargando trabajos...</p>
+            </div>
           </div>
           <button class="carousel-btn" id="ivan-next">→</button>
         </div>
@@ -65,7 +63,9 @@
         <div class="carousel-container" id="ref-carousel">
           <button class="carousel-btn" id="ref-prev">←</button>
           <div class="carousel-viewport">
-            <div class="carousel-track" id="ref-track"></div>
+            <div class="carousel-track" id="ref-track">
+              <p>Cargando trabajos...</p>
+            </div>
           </div>
           <button class="carousel-btn" id="ref-next">→</button>
         </div>
@@ -78,7 +78,9 @@
         <div class="carousel-container" id="otros-carousel">
           <button class="carousel-btn" id="otros-prev">←</button>
           <div class="carousel-viewport">
-            <div class="carousel-track" id="otros-track"></div>
+            <div class="carousel-track" id="otros-track">
+              <p>Cargando trabajos...</p>
+            </div>
           </div>
           <button class="carousel-btn" id="otros-next">→</button>
         </div>
@@ -91,7 +93,9 @@
         <div class="carousel-container" id="hist-carousel">
           <button class="carousel-btn" id="hist-prev">←</button>
           <div class="carousel-viewport">
-            <div class="carousel-track" id="hist-track"></div>
+            <div class="carousel-track" id="hist-track">
+              <p>Cargando historial...</p>
+            </div>
           </div>
           <button class="carousel-btn" id="hist-next">→</button>
         </div>
@@ -103,7 +107,7 @@
       <div class="footer-logo">
         <img
           class="imagen-de-barberia"
-          src="../images/barber.jpg"
+          src="/images/barber.jpg"
           alt="Barber Studio Logo"
         />
       </div>
@@ -167,9 +171,16 @@
       </nav>
     </footer>
     <script>
-      const API_AUTH = "http://localhost:4000/api/auth";
-      const API_CATALOG = "http://localhost:4000/api/catalogo";
-      const API_MENSAJES_PUBLIC = "http://localhost:4000/api/mensajes/publico";
+      // Detectar automáticamente la URL base del backend
+      const API_BASE_URL =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:4000"
+          : window.location.origin;
+
+      const API_AUTH = `${API_BASE_URL}/api/auth`;
+      const API_CATALOG = `${API_BASE_URL}/api/catalogo`;
+      const API_MENSAJES_PUBLIC = `${API_BASE_URL}/api/mensajes/publico`;
 
       function getToken() {
         return localStorage.getItem("token");
@@ -182,11 +193,11 @@
         switch (rol) {
           case "barbero":
           case "admin":
-            window.location.href = "/barberpi/templates/homebarber.html";
+            window.location.href = "/homebarber";
             break;
           case "cliente":
           default:
-            window.location.href = "/barberpi/templates/home.html";
+            window.location.href = "/home";
             break;
         }
       }
@@ -205,7 +216,7 @@
 
         if (!token) {
           alert("Debes iniciar sesión");
-          window.location.href = "/barberpi/templates/login.html";
+          window.location.href = "/";
           return;
         }
 
@@ -214,7 +225,7 @@
           return;
         }
 
-        // (Opcional) validar sesión
+        // Validar sesión
         try {
           const resp = await fetch(`${API_AUTH}/perfil`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -223,12 +234,22 @@
             alert("Sesión expirada. Vuelve a iniciar sesión.");
             localStorage.removeItem("token");
             localStorage.removeItem("rol");
-            window.location.href = "/barberpi/templates/login.html";
+            localStorage.removeItem("usuario");
+            window.location.href = "/";
             return;
           }
         } catch (e) {
           console.error("Error al obtener perfil", e);
         }
+
+        // Configurar logout
+        document.getElementById("logout-link").addEventListener("click", (e) => {
+          e.preventDefault();
+          localStorage.removeItem("token");
+          localStorage.removeItem("rol");
+          localStorage.removeItem("usuario");
+          window.location.href = "/";
+        });
 
         await cargarMensajesCliente();
         await Promise.all([
@@ -270,7 +291,7 @@
 
           mensajes.forEach((m) => {
             const card = document.createElement("div");
-            card.className = "catalog-card"; // reciclamos estilos
+            card.className = "catalog-card";
 
             const fecha = m.creado_en
               ? new Date(m.creado_en).toLocaleDateString("es-ES", {
@@ -288,15 +309,15 @@
                 : "Información";
 
             card.innerHTML = `
-        <div class="catalog-info">
-          <p class="catalog-description">${m.mensaje}</p>
-          <p class="catalog-date">
-            ${m.nombre_barber ? m.nombre_barber + " · " : ""}${tipoLabel}${
+              <div class="catalog-info">
+                <p class="catalog-description">${m.mensaje}</p>
+                <p class="catalog-date">
+                  ${m.nombre_barber ? m.nombre_barber + " · " : ""}${tipoLabel}${
               fecha ? " · " + fecha : ""
             }
-          </p>
-        </div>
-      `;
+                </p>
+              </div>
+            `;
             container.appendChild(card);
           });
         } catch (err) {
@@ -305,6 +326,7 @@
             "<p>Error de conexión al cargar los mensajes.</p>";
         }
       }
+
       async function cargarCarruselPorBarbero(key, nombreBarber, token) {
         const track = document.getElementById(`${key}-track`);
         const dots = document.getElementById(`${key}-dots`);
@@ -323,8 +345,7 @@
           if (!resp.ok) {
             const text = await resp.text();
             console.error(`Error carrusel ${key}: status=${resp.status}`, text);
-            track.innerHTML = "<p>No se pudieron cargar los trabajos.</p>";
-            track.innerHTML = `<p>Error ${resp.status}: ${text}</p>`;
+            track.innerHTML = `<p>No se pudieron cargar los trabajos (${resp.status}).</p>`;
             return;
           }
 
@@ -405,24 +426,27 @@
           }
         }
 
+        // Usar URL dinámica para las imágenes
+        const imageUrl = item.url_imagen.startsWith("http")
+          ? item.url_imagen
+          : `${API_BASE_URL}${item.url_imagen}`;
+
         card.innerHTML = `
-      <img src="http://localhost:4000${
-        item.url_imagen
-      }" alt="${titulo}" class="carousel-image">
-      <div class="carousel-info">
-        <h3 class="carousel-name">${titulo}</h3>
-        <p class="carousel-description">${desc}</p>
-        ${
-          barber || fecha
-            ? `<p class="carousel-description" style="margin-top:0.4rem; font-size:0.85rem; color:#888;">
-                 ${barber ? "Barbero: " + barber : ""}${
-                barber && fecha ? " · " : ""
-              }${fecha ? fecha : ""}
-               </p>`
-            : ""
-        }
-      </div>
-    `;
+          <img src="${imageUrl}" alt="${titulo}" class="carousel-image" onerror="this.src='/images/placeholder.jpg'">
+          <div class="carousel-info">
+            <h3 class="carousel-name">${titulo}</h3>
+            <p class="carousel-description">${desc}</p>
+            ${
+              barber || fecha
+                ? `<p class="carousel-description" style="margin-top:0.4rem; font-size:0.85rem; color:#888;">
+                     ${barber ? "Barbero: " + barber : ""}${
+                    barber && fecha ? " · " : ""
+                  }${fecha ? fecha : ""}
+                   </p>`
+                : ""
+            }
+          </div>
+        `;
 
         return card;
       }
@@ -438,7 +462,7 @@
 
         if (!cards.length) return;
 
-        const viewport = track.parentElement; // .carousel-viewport
+        const viewport = track.parentElement;
         const viewportWidth = viewport.clientWidth || 300;
         const sample = cards[0];
         const style = getComputedStyle(sample);
