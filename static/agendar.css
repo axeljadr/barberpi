@@ -431,7 +431,7 @@ body {
 .list-item-13:hover {
   text-decoration: underline;
 }
-/* Responsive para tablets */
+
 @media (max-width: 968px) {
   .booking-container {
     grid-template-columns: 1fr;
@@ -443,7 +443,6 @@ body {
   }
 }
 
-/* Responsive para móviles */
 @media (max-width: 768px) {
   .main-content {
     padding: 1rem;
@@ -455,11 +454,11 @@ body {
   }
 
   .calendar-grid {
-    grid-template-columns: repeat(1, 1fr);
+    grid-template-columns: repeat(7, 1fr);
   }
 
   .calendar-day-header {
-    display: none;
+    display: none; 
   }
 
   .calendar-day {
@@ -470,5 +469,21 @@ body {
   .footer {
     flex-direction: column;
     gap: 1.5rem;
+  }
+
+@media (max-width: 768px) {
+  .calendar-day {
+    background-color: #fff;
+    color: #222;
+  }
+
+  .calendar-day.other-month {
+    background-color: transparent; 
+    color: #999; 
+  }
+
+  .calendar-day.selected {
+    background-color: #007bff; 
+    color: white;
   }
 }
