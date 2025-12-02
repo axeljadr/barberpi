@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/clientes.css" />
+
+    <title>Gestión de Clientes</title>
+  </head>
+  <body>
+    <header class="header">
+      <div class="block">
+        <img
+          class="imagen-de-barberia"
+          src="/images/barber.jpg"
+          alt="Logo Barber Studio"
+        />
+      </div>
+      <nav class="navigation-pill-list" aria-label="Navegación principal">
+        <a href="/perfil" class="navigation-pill">
+          <span class="title">Mi Perfil</span>
+        </a>
+        <a href="/homebarber" class="navigation-pill">
+          <span class="title">Inicio</span>
+        </a>
+        <a href="/barber_agenda" class="navigation-pill">
+          <span class="">Agenda</span>
+        </a>
+        <a href="/clientes" class="navigation-pill">
+          <span class="title">Clientes</span>
+        </a>
+        <a href="/notibarbero" class="navigation-pill">
+          <span class="title">Notificaciones</span>
+        </a>
+        <a href="/login" class="navigation-pill">
+          <span class="title">Cerrar Sesión</span>
+        </a>
+      </nav>
+    </header>
+
+    <main class="main-content" style="max-width: 1200px">
+      <h1 style="margin-bottom: 2rem; text-transform: lowercase">
+        gestión de clientes
+      </h1>
+
+      <div class="stats-container">
+        <div class="stat-card">
+          <div class="stat-number" id="total-clientes">0</div>
+          <div class="stat-label">total clientes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="clientes-activos">0</div>
+          <div class="stat-label">clientes activos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="total-citas">0</div>
+          <div class="stat-label">citas totales</div>
+        </div>
+      </div>
+
+      <!-- Buscador -->
+      <div class="search-container">
+        <input
+          type="text"
+          id="search-input"
+          class="search-input"
+          placeholder="Buscar por nombre, email o teléfono."
+        />
+        <button class="btn btn-secondary" id="clear-search">Limpiar</button>
+      </div>
+
+      <!-- Tabla de clientes -->
+      <div class="clients-table">
+        <table>
+          <thead>
+            <tr>
+              <th>nombre</th>
+              <th>email</th>
+              <th>teléfono</th>
+              <th>citas</th>
+              <th>última cita</th>
+              <th>registro</th>
+              <th>acciones</th>
+            </tr>
+          </thead>
+          <tbody id="clients-tbody">
+            <!-- Se llena dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- Modal de detalle del cliente -->
+    <div class="modal" id="client-detail-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">detalle del cliente</h2>
+          <button class="close-modal" id="close-detail-modal">&times;</button>
+        </div>
+        <div id="client-detail-content">
+          <!-- Se llena dinámicamente -->
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-logo">
+        <img
+          class="imagen-de-barberia"
+          src="/images/barber.jpg"
+          alt="Barber Studio Logo"
+        />
+      </div>
+      <nav class="text-link-list" aria-labelledby="footer-contact">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-contact" class="text-strong">
+            <span class="text-strong-2">contacto</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a href="tel:9837324637" class="list-item">9837324637</a>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:barberpi@utttn.mx" class="list-item-2"
+              >barberpi@utttn.mx</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-location">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-location" class="text-strong">
+            <span class="text-strong-2">ubicación</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a
+              href="https://maps.app.goo.gl/ZD5gur5vPiwKMVCW9?g_st=iw"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="list-item-7"
+              >google.maps/micasa</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-creator">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-creator" class="text-strong">
+            <span class="">creado por:</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <span class="list-item-11">Axel Rivera</span>
+          </li>
+          <li class="text-link-list-item">
+            <span class="list-item-12">contactos:</span>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:axel.delgado@uttn.mx" class="list-item-13"
+              >axel.delgado@uttn.mx</a
+            >
+          </li>
+          <li class="text-link-list-item">
+            <a href="tel:8994287620" class="list-item">8994287620</a>
+          </li>
+        </ul>
+      </nav>
+    </footer>
+
+    <script>
+      const API_BASE = "http://localhost:4000/api";
+
+      let allClients = [];
+      let filteredClients = [];
+
+      function getToken() {
+        return localStorage.getItem("token");
+      }
+
+      function getRol() {
+        return localStorage.getItem("rol");
+      }
+
+      document.addEventListener("DOMContentLoaded", async function () {
+        const rol = getRol();
+
+        // Verificar que sea admin
+        if (rol !== "admin") {
+          alert("No tienes permisos para acceder a esta página");
+          window.location.href = "/home";
+          return;
+        }
+
+        await loadClients();
+        setupEventListeners();
+      });
+
+      async function loadClients() {
+        const token = getToken();
+
+        try {
+          const resp = await fetch(`${API_BASE}/clientes`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!resp.ok) {
+            const text = await resp.text();
+            console.error("Error al cargar clientes:", resp.status, text);
+            alert("Error al cargar clientes");
+            return;
+          }
+
+          allClients = await resp.json();
+          filteredClients = [...allClients];
+
+          updateStats();
+          renderClients();
+        } catch (err) {
+          console.error("Error conexión clientes:", err);
+          alert("Error de conexión al cargar clientes");
+        }
+      }
+
+      function updateStats() {
+        const totalClientes = allClients.length;
+        const clientesActivos = allClients.filter(
+          (c) => c.total_citas > 0
+        ).length;
+        const totalCitas = allClients.reduce(
+          (sum, c) => sum + (c.total_citas || 0),
+          0
+        );
+
+        document.getElementById("total-clientes").textContent = totalClientes;
+        document.getElementById("clientes-activos").textContent =
+          clientesActivos;
+        document.getElementById("total-citas").textContent = totalCitas;
+      }
+
+      function renderClients() {
+        const tbody = document.getElementById("clients-tbody");
+        tbody.innerHTML = "";
+
+        if (filteredClients.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" class="empty-state">
+                No se encontraron clientes
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        filteredClients.forEach((client) => {
+          const row = document.createElement("tr");
+
+          // Nombre
+          const nameCell = document.createElement("td");
+          nameCell.textContent = client.nombre;
+          row.appendChild(nameCell);
+
+          // Email
+          const emailCell = document.createElement("td");
+          emailCell.textContent = client.email;
+          row.appendChild(emailCell);
+
+          // Teléfono
+          const phoneCell = document.createElement("td");
+          phoneCell.textContent = client.telefono || "-";
+          row.appendChild(phoneCell);
+
+          // Total citas
+          const citasCell = document.createElement("td");
+          const badge = document.createElement("span");
+          badge.className = "badge";
+          if (client.total_citas === 0) {
+            badge.classList.add("badge-warning");
+          } else if (client.total_citas >= 5) {
+            badge.classList.add("badge-success");
+          } else {
+            badge.classList.add("badge-info");
+          }
+          badge.textContent = client.total_citas;
+          citasCell.appendChild(badge);
+          row.appendChild(citasCell);
+
+          // Última cita
+          const lastCitaCell = document.createElement("td");
+          lastCitaCell.textContent = client.ultima_cita
+            ? formatDate(client.ultima_cita)
+            : "Nunca";
+          row.appendChild(lastCitaCell);
+
+          // Fecha de registro
+          const registroCell = document.createElement("td");
+          registroCell.textContent = formatDate(client.creado_en);
+          row.appendChild(registroCell);
+
+          // Acciones
+          const actionsCell = document.createElement("td");
+          const actionsDiv = document.createElement("div");
+          actionsDiv.className = "action-buttons";
+
+          const viewBtn = document.createElement("button");
+          viewBtn.className = "btn btn-primary";
+          viewBtn.textContent = "Ver";
+          viewBtn.addEventListener(
+            "click",
+            () => (window.location.href = `perfil?user_id=${client.id_usuario}`)
+          );
+          actionsDiv.appendChild(viewBtn);
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "btn btn-danger";
+          deleteBtn.textContent = "Eliminar";
+          deleteBtn.addEventListener("click", () =>
+            deleteClient(client.id_usuario, client.nombre)
+          );
+          actionsDiv.appendChild(deleteBtn);
+
+          actionsCell.appendChild(actionsDiv);
+          row.appendChild(actionsCell);
+
+          tbody.appendChild(row);
+        });
+      }
+
+      function setupEventListeners() {
+        const searchInput = document.getElementById("search-input");
+        searchInput.addEventListener("input", function () {
+          const query = this.value.toLowerCase().trim();
+
+          if (!query) {
+            filteredClients = [...allClients];
+          } else {
+            filteredClients = allClients.filter(
+              (c) =>
+                c.nombre.toLowerCase().includes(query) ||
+                c.email.toLowerCase().includes(query) ||
+                (c.telefono && c.telefono.includes(query))
+            );
+          }
+
+          renderClients();
+        });
+
+        document
+          .getElementById("clear-search")
+          .addEventListener("click", function () {
+            searchInput.value = "";
+            filteredClients = [...allClients];
+            renderClients();
+          });
+
+        document
+          .getElementById("close-detail-modal")
+          .addEventListener("click", function () {
+            document.getElementById("client-detail-modal").style.display =
+              "none";
+          });
+      }
+
+      async function viewClientDetail(id_cliente) {
+        const token = getToken();
+
+        try {
+          const resp = await fetch(`${API_BASE}/clientes/${id_cliente}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!resp.ok) {
+            alert("Error al cargar detalle del cliente");
+            return;
+          }
+
+          const data = await resp.json();
+          renderClientDetail(data);
+
+          document.getElementById("client-detail-modal").style.display = "flex";
+        } catch (err) {
+          console.error("Error al cargar detalle:", err);
+          alert("Error de conexión");
+        }
+      }
+
+      function renderClientDetail(data) {
+        const content = document.getElementById("client-detail-content");
+        const { cliente, citas } = data;
+
+        let html = `
+          <div class="detail-row">
+            <span class="detail-label">nombre:</span>
+            <span class="detail-value">${cliente.nombre}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">email:</span>
+            <span class="detail-value">${cliente.email}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">teléfono:</span>
+            <span class="detail-value">${cliente.telefono || "-"}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">registro:</span>
+            <span class="detail-value">${formatDate(cliente.creado_en)}</span>
+          </div>
+
+          <div class="citas-list">
+            <h3 style="margin-bottom: 1rem; text-transform: lowercase;">historial de citas (${
+              citas.length
+            })</h3>
+        `;
+
+        if (citas.length === 0) {
+          html += `<p style="color: #999; text-align: center;">No tiene citas registradas</p>`;
+        } else {
+          citas.forEach((cita) => {
+            html += `
+              <div class="cita-item">
+                <div class="cita-header">
+                  <strong>${formatDate(cita.fecha)} - ${cita.hora.slice(
+              0,
+              5
+            )}</strong>
+                  <span class="badge ${getBadgeClass(cita.estado)}">${
+              cita.estado
+            }</span>
+                </div>
+                <div class="cita-info">
+                  <strong>Servicio:</strong> ${cita.servicio_nombre} | 
+                  <strong>Barbero:</strong> ${cita.barbero_nombre} | 
+                  <strong>Precio:</strong> $${cita.precio_estimado || "N/A"}
+                </div>
+              </div>
+            `;
+          });
+        }
+
+        html += `</div>`;
+
+        content.innerHTML = html;
+      }
+
+      function getBadgeClass(estado) {
+        switch (estado) {
+          case "completada":
+            return "badge-success";
+          case "confirmada":
+            return "badge-info";
+          case "cancelada":
+            return "badge-danger";
+          default:
+            return "badge-warning";
+        }
+      }
+
+      async function deleteClient(id_cliente, nombre) {
+        if (
+          !confirm(
+            `¿Estás seguro de eliminar al cliente "${nombre}"?\n\nEsto eliminará también todas sus citas.`
+          )
+        ) {
+          return;
+        }
+
+        const token = getToken();
+
+        try {
+          const resp = await fetch(`${API_BASE}/clientes/${id_cliente}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!resp.ok) {
+            const data = await resp.json();
+            alert(data.error || "Error al eliminar cliente");
+            return;
+          }
+
+          alert("Cliente eliminado correctamente");
+          await loadClients();
+        } catch (err) {
+          console.error("Error al eliminar cliente:", err);
+          alert("Error de conexión");
+        }
+      }
+
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString("es-ES", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      }
+    </script>
+  </body>
+</html>
