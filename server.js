@@ -24,12 +24,23 @@ app.use(express.urlencoded({ extended: true }));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const UPLOADS_ROOT = path.join(__dirname, "uploads");
+const UPLOADS_PERFIL = path.join(UPLOADS_ROOT, "fotosdeperfil");
+try {
+  if (!fs.existsSync(UPLOADS_ROOT)) fs.mkdirSync(UPLOADS_ROOT);
+  if (!fs.existsSync(UPLOADS_PERFIL))
+    fs.mkdirSync(UPLOADS_PERFIL, { recursive: true });
+} catch (err) {
+  console.error("Error creando carpetas de uploads:", err);
+}
 
 // Servir archivos estáticos
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/static", express.static(path.join(__dirname, "static")));
 app.use("/images", express.static(path.join(__dirname, "images")));
+app.use("/templates", express.static(path.join(__dirname, "templates")));
 
+// Multer storages
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, "uploads"));
@@ -43,7 +54,7 @@ const storage = multer.diskStorage({
 });
 const storagePerfil = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/fotosdeperfil/");
+    cb(null, UPLOADS_PERFIL);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -106,12 +117,12 @@ function verificarToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, SECRET);
-    req.usuario = decoded; // { id, email, rol }
+    req.usuario = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ error: "Token inválido o expirado" });
   }
-}// Servir páginas HTML
+}
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "login.html"));
 });
@@ -135,8 +146,7 @@ app.get("/perfil", (req, res) => {
 app.get("/agendar", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "agendar.html"));
 });
-
-app.get("/barber_agenda", (req, res) => {
+app.get("/agenda", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "barber_agenda.html"));
 });
 
@@ -148,7 +158,10 @@ app.get("/notificacion", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "notificacion.html"));
 });
 
-// Agrega las demás páginas que tengas...
+app.get("/clientes", (req, res) => {
+  res.sendFile(path.join(__dirname, "templates", "clientes.html"));
+});
+
 app.post("/api/auth/registro", async (req, res) => {
   const { nombre, email, contraseña } = req.body;
 
@@ -464,6 +477,186 @@ app.post(
     }
   }
 );
+
+app.post("/api/mensajes", verificarToken, async (req, res) => {
+  if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
+    return res
+      .status(403)
+      .json({ error: "Solo barberos y admins pueden crear mensajes" });
+  }
+
+  const { mensaje, tipo } = req.body;
+  const tiposPermitidos = ["info", "ocupado", "trabajando"];
+
+  if (!mensaje || !mensaje.trim()) {
+    return res.status(400).json({ error: "El mensaje no puede estar vacío" });
+  }
+
+  const tipoFinal = tiposPermitidos.includes(tipo) ? tipo : "info";
+
+  try {
+    const pool = await conectarDB();
+
+    const result = await pool
+      .request()
+      .input("id_barbero", mssql.Int, req.usuario.id)
+      .input("mensaje", mssql.NVarChar(700), mensaje.trim())
+      .input("tipo", mssql.VarChar(20), tipoFinal).query(`
+        INSERT INTO Mensajes (id_barbero, mensaje, tipo, activo)
+        OUTPUT INSERTED.id_mensaje, INSERTED.creado_en
+        VALUES (@id_barbero, @mensaje, @tipo, 1)
+      `);
+
+    const inserted = result.recordset[0];
+
+    res.json({
+      mensaje: "Mensaje creado",
+      data: {
+        id_mensaje: inserted.id_mensaje,
+        id_barbero: req.usuario.id,
+        mensaje: mensaje.trim(),
+        tipo: tipoFinal,
+        activo: true,
+        creado_en: inserted.creado_en,
+      },
+    });
+  } catch (error) {
+    console.error("Error al crear mensaje:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+app.get("/api/mensajes/mis-mensajes", verificarToken, async (req, res) => {
+  if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
+    return res
+      .status(403)
+      .json({ error: "Solo barberos y admins pueden ver estos mensajes" });
+  }
+
+  try {
+    const pool = await conectarDB();
+
+    const result = await pool
+      .request()
+      .input("id_barbero", mssql.Int, req.usuario.id).query(`
+        SELECT id_mensaje, id_barbero, mensaje, tipo, activo, creado_en
+        FROM Mensajes
+        WHERE id_barbero = @id_barbero and activo = 1
+        ORDER BY creado_en DESC
+      `);
+
+    res.json(result.recordset);
+  } catch (error) {
+    console.error("Error al obtener mensajes:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+app.put("/api/mensajes/:id_mensaje", verificarToken, async (req, res) => {
+  if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
+    return res
+      .status(403)
+      .json({ error: "Solo barberos y admins pueden editar mensajes" });
+  }
+
+  const id_mensaje = parseInt(req.params.id_mensaje, 10);
+  if (isNaN(id_mensaje)) {
+    return res.status(400).json({ error: "id_mensaje inválido" });
+  }
+
+  const { mensaje, tipo } = req.body;
+  const tiposPermitidos = ["info", "ocupado", "trabajando"];
+
+  if (!mensaje || !mensaje.trim()) {
+    return res.status(400).json({ error: "El mensaje no puede estar vacío" });
+  }
+
+  const tipoFinal = tiposPermitidos.includes(tipo) ? tipo : "info";
+
+  try {
+    const pool = await conectarDB();
+
+    const result = await pool
+      .request()
+      .input("id_mensaje", mssql.Int, id_mensaje)
+      .input("id_barbero", mssql.Int, req.usuario.id)
+      .input("mensaje", mssql.NVarChar(700), mensaje.trim())
+      .input("tipo", mssql.VarChar(20), tipoFinal).query(`
+        UPDATE Mensajes
+        SET mensaje = @mensaje,
+            tipo = @tipo
+        WHERE id_mensaje = @id_mensaje
+          AND id_barbero = @id_barbero;
+
+        SELECT id_mensaje, id_barbero, mensaje, tipo, activo, creado_en
+        FROM Mensajes
+        WHERE id_mensaje = @id_mensaje
+          AND id_barbero = @id_barbero;
+      `);
+
+    if (!result.recordset.length) {
+      return res.status(404).json({ error: "Mensaje no encontrado" });
+    }
+
+    res.json({ mensaje: "Mensaje actualizado", data: result.recordset[0] });
+  } catch (error) {
+    console.error("Error al actualizar mensaje:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+app.patch(
+  "/api/mensajes/:id_mensaje/activo",
+  verificarToken,
+  async (req, res) => {
+    if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
+      return res.status(403).json({
+        error: "Solo barberos y admins pueden cambiar estado de mensajes",
+      });
+    }
+
+    const id_mensaje = parseInt(req.params.id_mensaje, 10);
+    if (isNaN(id_mensaje)) {
+      return res.status(400).json({ error: "id_mensaje inválido" });
+    }
+
+    const { activo } = req.body;
+    const activoBool = Boolean(activo);
+
+    try {
+      const pool = await conectarDB();
+
+      const result = await pool
+        .request()
+        .input("id_mensaje", mssql.Int, id_mensaje)
+        .input("id_barbero", mssql.Int, req.usuario.id)
+        .input("activo", mssql.Bit, activoBool).query(`
+        UPDATE Mensajes
+        SET activo = @activo
+        WHERE id_mensaje = @id_mensaje
+          AND id_barbero = @id_barbero;
+
+        SELECT id_mensaje, id_barbero, mensaje, tipo, activo, creado_en
+        FROM Mensajes
+        WHERE id_mensaje = @id_mensaje
+          AND id_barbero = @id_barbero;
+      `);
+
+      if (!result.recordset.length) {
+        return res.status(404).json({ error: "Mensaje no encontrado" });
+      }
+
+      res.json({
+        mensaje: "Estado de mensaje actualizado",
+        data: result.recordset[0],
+      });
+    } catch (error) {
+      console.error("Error al cambiar estado de mensaje:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  }
+);
+
 app.get("/api/catalogo/mis-trabajos", verificarToken, async (req, res) => {
   if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
     return res
@@ -692,189 +885,6 @@ app.delete("/api/catalogo/:id_foto", verificarToken, async (req, res) => {
   }
 });
 
-// Crear un mensaje nuevo
-app.post("/api/mensajes", verificarToken, async (req, res) => {
-  if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
-    return res
-      .status(403)
-      .json({ error: "Solo barberos y admins pueden crear mensajes" });
-  }
-
-  const { mensaje, tipo } = req.body;
-  const tiposPermitidos = ["info", "ocupado", "trabajando"];
-
-  if (!mensaje || !mensaje.trim()) {
-    return res.status(400).json({ error: "El mensaje no puede estar vacío" });
-  }
-
-  const tipoFinal = tiposPermitidos.includes(tipo) ? tipo : "info";
-
-  try {
-    const pool = await conectarDB();
-
-    const result = await pool
-      .request()
-      .input("id_barbero", mssql.Int, req.usuario.id)
-      .input("mensaje", mssql.NVarChar(700), mensaje.trim())
-      .input("tipo", mssql.VarChar(20), tipoFinal).query(`
-        INSERT INTO Mensajes (id_barbero, mensaje, tipo, activo)
-        OUTPUT INSERTED.id_mensaje, INSERTED.creado_en
-        VALUES (@id_barbero, @mensaje, @tipo, 1)
-      `);
-
-    const inserted = result.recordset[0];
-
-    res.json({
-      mensaje: "Mensaje creado",
-      data: {
-        id_mensaje: inserted.id_mensaje,
-        id_barbero: req.usuario.id,
-        mensaje: mensaje.trim(),
-        tipo: tipoFinal,
-        activo: true,
-        creado_en: inserted.creado_en,
-      },
-    });
-  } catch (error) {
-    console.error("Error al crear mensaje:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
-// Mensajes del barbero logueado (incluye activos/inactivos)
-app.get("/api/mensajes/mis-mensajes", verificarToken, async (req, res) => {
-  if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
-    return res
-      .status(403)
-      .json({ error: "Solo barberos y admins pueden ver estos mensajes" });
-  }
-
-  try {
-    const pool = await conectarDB();
-
-    const result = await pool
-      .request()
-      .input("id_barbero", mssql.Int, req.usuario.id).query(`
-        SELECT id_mensaje, id_barbero, mensaje, tipo, activo, creado_en
-        FROM Mensajes
-        WHERE id_barbero = @id_barbero and activo = 1
-        ORDER BY creado_en DESC
-      `);
-
-    res.json(result.recordset);
-  } catch (error) {
-    console.error("Error al obtener mensajes:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
-// Editar contenido y tipo
-app.put("/api/mensajes/:id_mensaje", verificarToken, async (req, res) => {
-  if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
-    return res
-      .status(403)
-      .json({ error: "Solo barberos y admins pueden editar mensajes" });
-  }
-
-  const id_mensaje = parseInt(req.params.id_mensaje, 10);
-  if (isNaN(id_mensaje)) {
-    return res.status(400).json({ error: "id_mensaje inválido" });
-  }
-
-  const { mensaje, tipo } = req.body;
-  const tiposPermitidos = ["info", "ocupado", "trabajando"];
-
-  if (!mensaje || !mensaje.trim()) {
-    return res.status(400).json({ error: "El mensaje no puede estar vacío" });
-  }
-
-  const tipoFinal = tiposPermitidos.includes(tipo) ? tipo : "info";
-
-  try {
-    const pool = await conectarDB();
-
-    const result = await pool
-      .request()
-      .input("id_mensaje", mssql.Int, id_mensaje)
-      .input("id_barbero", mssql.Int, req.usuario.id)
-      .input("mensaje", mssql.NVarChar(700), mensaje.trim())
-      .input("tipo", mssql.VarChar(20), tipoFinal).query(`
-        UPDATE Mensajes
-        SET mensaje = @mensaje,
-            tipo = @tipo
-        WHERE id_mensaje = @id_mensaje
-          AND id_barbero = @id_barbero;
-
-        SELECT id_mensaje, id_barbero, mensaje, tipo, activo, creado_en
-        FROM Mensajes
-        WHERE id_mensaje = @id_mensaje
-          AND id_barbero = @id_barbero;
-      `);
-
-    if (!result.recordset.length) {
-      return res.status(404).json({ error: "Mensaje no encontrado" });
-    }
-
-    res.json({ mensaje: "Mensaje actualizado", data: result.recordset[0] });
-  } catch (error) {
-    console.error("Error al actualizar mensaje:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
-// Cambiar estado activo (borrado lógico)
-app.patch(
-  "/api/mensajes/:id_mensaje/activo",
-  verificarToken,
-  async (req, res) => {
-    if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
-      return res.status(403).json({
-        error: "Solo barberos y admins pueden cambiar estado de mensajes",
-      });
-    }
-
-    const id_mensaje = parseInt(req.params.id_mensaje, 10);
-    if (isNaN(id_mensaje)) {
-      return res.status(400).json({ error: "id_mensaje inválido" });
-    }
-
-    const { activo } = req.body;
-    const activoBool = Boolean(activo);
-
-    try {
-      const pool = await conectarDB();
-
-      const result = await pool
-        .request()
-        .input("id_mensaje", mssql.Int, id_mensaje)
-        .input("id_barbero", mssql.Int, req.usuario.id)
-        .input("activo", mssql.Bit, activoBool).query(`
-        UPDATE Mensajes
-        SET activo = @activo
-        WHERE id_mensaje = @id_mensaje
-          AND id_barbero = @id_barbero;
-
-        SELECT id_mensaje, id_barbero, mensaje, tipo, activo, creado_en
-        FROM Mensajes
-        WHERE id_mensaje = @id_mensaje
-          AND id_barbero = @id_barbero;
-      `);
-
-      if (!result.recordset.length) {
-        return res.status(404).json({ error: "Mensaje no encontrado" });
-      }
-
-      res.json({
-        mensaje: "Estado de mensaje actualizado",
-        data: result.recordset[0],
-      });
-    } catch (error) {
-      console.error("Error al cambiar estado de mensaje:", error);
-      res.status(500).json({ error: "Error interno del servidor" });
-    }
-  }
-);
-
 // Mensajes activos para mostrar a clientes
 app.get("/api/mensajes/publico", verificarToken, async (req, res) => {
   try {
@@ -1042,14 +1052,13 @@ app.get("/api/horario-dia", verificarToken, async (req, res) => {
         const hh = String(Math.floor(inicioMin / 60)).padStart(2, "0");
         const mm = String(inicioMin % 60).padStart(2, "0");
         slots.push({
-          hora: `${hh}:${mm}`, // "HH:MM"
+          hora: `${hh}:${mm}`,
           disponible: true,
         });
         inicioMin += dur;
       }
     }
 
-    // 4) Citas del día para ese barbero
     const citasRes = await pool
       .request()
       .input("id_barbero", mssql.Int, id_barbero)
@@ -1122,7 +1131,6 @@ app.get("/api/citas-dia", verificarToken, async (req, res) => {
   }
 });
 
-// POST /api/marcar-dia - marcar día completo con mensaje
 app.post("/api/marcar-dia", verificarToken, async (req, res) => {
   if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
     return res.status(403).json({ error: "Acceso denegado" });
@@ -1137,7 +1145,6 @@ app.post("/api/marcar-dia", verificarToken, async (req, res) => {
   try {
     const pool = await conectarDB();
 
-    // Insertar mensaje en MensajesCalendario
     await pool
       .request()
       .input("id_barbero", mssql.Int, req.usuario.id)
@@ -1155,7 +1162,6 @@ app.post("/api/marcar-dia", verificarToken, async (req, res) => {
   }
 });
 
-// POST /api/marcar-slot - marcar slot individual como ocupado
 app.post("/api/marcar-slot", verificarToken, async (req, res) => {
   if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
     return res.status(403).json({ error: "Acceso denegado" });
@@ -1237,7 +1243,6 @@ app.post("/api/liberar-slot", verificarToken, async (req, res) => {
   }
 });
 
-// GET /api/notificaciones-cliente
 app.get("/api/notificaciones-cliente", verificarToken, async (req, res) => {
   if (req.usuario.rol !== "cliente") {
     return res.status(403).json({ error: "Solo clientes" });
@@ -1248,7 +1253,6 @@ app.get("/api/notificaciones-cliente", verificarToken, async (req, res) => {
   try {
     const pool = await conectarDB();
 
-    // Próxima cita futura (la más cercana)
     const proximaResult = await pool
       .request()
       .input("id_usuario", mssql.Int, idCliente).query(`
@@ -1264,7 +1268,6 @@ app.get("/api/notificaciones-cliente", verificarToken, async (req, res) => {
         ORDER BY fecha ASC, hora ASC
       `);
 
-    // Última cita pasada
     const ultimaResult = await pool
       .request()
       .input("id_usuario", mssql.Int, idCliente).query(`
@@ -1283,7 +1286,6 @@ app.get("/api/notificaciones-cliente", verificarToken, async (req, res) => {
     const hoy = new Date();
     const hoysolo = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
 
-    // --- Próxima cita ---
     if (proximaResult.recordset.length > 0) {
       const cita = proximaResult.recordset[0];
       const fechaCita = new Date(cita.fecha);
@@ -1295,16 +1297,14 @@ app.get("/api/notificaciones-cliente", verificarToken, async (req, res) => {
       const diffMs = citasolo - hoysolo;
       const diffDias = diffMs / (1000 * 60 * 60 * 24);
 
-      // 1) Notificación de que su próxima cita es a tal hora (siempre)
       notificaciones.push({
-        tipo: "proxima_cita", // para pintar la tarjeta
+        tipo: "proxima_cita",
         id_cita: cita.id_cita,
         fecha: cita.fecha,
         hora: cita.hora,
         estado: cita.estado,
       });
 
-      // 2) Si es mañana, recordatorio un día antes
       if (diffDias === 1) {
         notificaciones.push({
           tipo: "recordatorio_un_dia_antes",
@@ -1354,150 +1354,73 @@ app.get("/api/notificaciones/barbero", verificarToken, async (req, res) => {
       .status(403)
       .json({ error: "Solo barberos pueden ver estas notificaciones" });
   }
-
   try {
     const pool = await conectarDB();
 
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const pageSize = Math.max(parseInt(req.query.pageSize || "10", 10), 1);
+    const offset = (page - 1) * pageSize;
+
+    // Si es admin y viene id_barbero en query, usarlo; si no, usar el id del token
+    const idBarbero =
+      req.usuario.rol === "admin" && req.query.id_barbero
+        ? parseInt(req.query.id_barbero, 10)
+        : req.usuario.id;
+
+    // Query con COUNT(*) OVER() y paginación OFFSET FETCH (SQL Server)
     const result = await pool
       .request()
-      .input("id_barbero", mssql.Int, req.usuario.id).query(`
+      .input("id_barbero", mssql.Int, idBarbero)
+      .input("offset", mssql.Int, offset)
+      .input("pageSize", mssql.Int, pageSize).query(`
         SELECT 
-          c.id_cita,
-          c.fecha,
-          c.hora,
-          c.estado,
-          c.creado_en,
+          n.id_notificacion,
+          n.id_cita,
+          n.tipo,
+          COALESCE(n.titulo, '') AS titulo,
+          COALESCE(n.mensaje, '') AS mensaje,
+          c.fecha AS fecha_cita,
+          c.hora AS hora_inicio,
           u.nombre AS nombre_cliente,
-          s.nombre AS nombre_servicio
-        FROM Citas c
-        JOIN Usuarios u ON c.id_usuario = u.id_usuario
-        JOIN Servicios s ON c.servicio = s.id_servicio
-        WHERE c.id_barbero = @id_barbero
-          AND c.creado_en >= DATEADD(DAY, -7, GETDATE())
-        ORDER BY c.creado_en DESC
+          s.nombre AS nombre_servicio,
+          n.creado_en AS timestamp,
+          COUNT(*) OVER() AS total_count
+        FROM Notificaciones n
+        LEFT JOIN Citas c ON n.id_cita = c.id_cita
+        LEFT JOIN Usuarios u ON c.id_usuario = u.id_usuario
+        LEFT JOIN Servicios s ON c.servicio = s.id_servicio
+        WHERE n.id_barbero = @id_barbero AND n.activo = 1
+        ORDER BY n.creado_en DESC
+        OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY
       `);
 
-    const citas = result.recordset;
+    const rows = result.recordset || [];
+    const total = rows.length ? rows[0].total_count : 0;
 
-    // Convertir cada cita en una "notificación" según su estado
-    const notificaciones = citas.map((c) => {
-      let tipo;
-      let titulo;
-      let mensaje;
+    const notifications = rows.map((r) => ({
+      id_notificacion: r.id_notificacion,
+      id_cita: r.id_cita,
+      tipo: r.tipo,
+      titulo: r.titulo,
+      mensaje: r.mensaje,
+      fecha_cita: r.fecha_cita,
+      hora_inicio: r.hora_inicio,
+      nombre_cliente: r.nombre_cliente,
+      nombre_servicio: r.nombre_servicio,
+      timestamp: r.timestamp,
+    }));
 
-      switch (c.estado) {
-        case "pendiente":
-          tipo = "nueva";
-          titulo = "Nueva cita agendada";
-          mensaje = `El cliente ${c.nombre_cliente} ha agendado una cita para ${c.nombre_servicio}`;
-          break;
-        case "cancelada":
-          tipo = "cancelada";
-          titulo = "Cita cancelada";
-          mensaje = `${c.nombre_cliente} ha cancelado su cita para ${c.nombre_servicio}`;
-          break;
-        case "confirmada":
-          tipo = "confirmada";
-          titulo = "Cita confirmada";
-          mensaje = `${c.nombre_cliente} ha confirmado su cita para ${c.nombre_servicio}`;
-          break;
-        case "completada":
-          tipo = "completada";
-          titulo = "Cita completada";
-          mensaje = `Cita con ${c.nombre_cliente} para ${c.nombre_servicio} ha sido completada`;
-          break;
-        default:
-          tipo = "nueva";
-          titulo = "Actualización de cita";
-          mensaje = `Cambio en la cita de ${c.nombre_cliente} para ${c.nombre_servicio}`;
-      }
-
-      return {
-        id_cita: c.id_cita,
-        tipo,
-        titulo,
-        mensaje,
-        fecha_cita: c.fecha,
-        hora_inicio: c.hora,
-        nombre_cliente: c.nombre_cliente,
-        nombre_servicio: c.nombre_servicio,
-        timestamp: c.creado_en,
-      };
+    res.json({
+      total,
+      page,
+      pageSize,
+      notifications,
     });
-
-    res.json(notificaciones);
-  } catch (error) {
-    console.error("Error al obtener notificaciones barbero:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
-// POST /api/citas/:id_cita/confirmar
-app.post("/api/citas/:id_cita/confirmar", verificarToken, async (req, res) => {
-  if (req.usuario.rol !== "cliente") {
-    return res.status(403).json({ error: "Solo clientes" });
-  }
-  const { id_cita } = req.params;
-  const idCliente = req.usuario.id;
-
-  try {
-    const pool = await conectarDB();
-    const result = await pool
-      .request()
-      .input("id_cita", mssql.Int, id_cita)
-      .input("id_usuario", mssql.Int, idCliente).query(`
-          UPDATE Citas
-          SET estado = 'confirmada'
-          WHERE id_cita = @id_cita AND id_usuario = @id_usuario
-        `);
-
-    if (!result.rowsAffected || result.rowsAffected[0] === 0) {
-      return res.status(404).json({ error: "Cita no encontrada" });
-    }
-
-    res.json({ mensaje: "Cita confirmada" });
   } catch (err) {
-    console.error("Error al confirmar cita:", err);
-    res
-      .status(500)
-      .json({ error: "Error interno del servidor", detalle: err.message });
+    console.error("Error en /api/notificaciones/barbero (paginado):", err);
+    res.status(500).json({ error: "Error al obtener notificaciones" });
   }
 });
-
-// POST /api/citas/:id_cita/cancelar  (negar/liberar)
-app.post("/api/citas/:id_cita/cancelar", verificarToken, async (req, res) => {
-  if (req.usuario.rol !== "cliente") {
-    return res.status(403).json({ error: "Solo clientes" });
-  }
-  const { id_cita } = req.params;
-  const idCliente = req.usuario.id;
-
-  try {
-    const pool = await conectarDB();
-    const result = await pool
-      .request()
-      .input("id_cita", mssql.Int, id_cita)
-      .input("id_usuario", mssql.Int, idCliente).query(`
-          UPDATE Citas
-          SET estado = 'cancelada'
-          WHERE id_cita = @id_cita AND id_usuario = @id_usuario
-        `);
-
-    if (!result.rowsAffected || result.rowsAffected[0] === 0) {
-      return res.status(404).json({ error: "Cita no encontrada" });
-    }
-
-    res.json({ mensaje: "Cita cancelada" });
-  } catch (err) {
-    console.error("Error al cancelar cita:", err);
-    res
-      .status(500)
-      .json({ error: "Error interno del servidor", detalle: err.message });
-  }
-});
-
-// POST /api/citas/:id_cita/reagendar
-// Solo marca como cancelada; el front redirige a agendar.html
 app.post("/api/citas/:id_cita/reagendar", verificarToken, async (req, res) => {
   if (req.usuario.rol !== "cliente") {
     return res.status(403).json({ error: "Solo clientes" });
@@ -1529,7 +1452,6 @@ app.post("/api/citas/:id_cita/reagendar", verificarToken, async (req, res) => {
   }
 });
 
-// POST /api/citas/:id_cita/confirmar
 app.post("/api/citas/:id_cita/confirmar", verificarToken, async (req, res) => {
   if (req.usuario.rol !== "cliente") {
     return res.status(403).json({ error: "Solo clientes" });
@@ -1561,7 +1483,6 @@ app.post("/api/citas/:id_cita/confirmar", verificarToken, async (req, res) => {
   }
 });
 
-// POST /api/citas/:id_cita/cancelar  (negar/liberar)
 app.post("/api/citas/:id_cita/cancelar", verificarToken, async (req, res) => {
   if (req.usuario.rol !== "cliente") {
     return res.status(403).json({ error: "Solo clientes" });
@@ -1593,8 +1514,6 @@ app.post("/api/citas/:id_cita/cancelar", verificarToken, async (req, res) => {
   }
 });
 
-// POST /api/citas/:id_cita/reagendar
-// Solo marca como cancelada; el front redirige a agendar.html
 app.post("/api/citas/:id_cita/reagendar", verificarToken, async (req, res) => {
   if (req.usuario.rol !== "cliente") {
     return res.status(403).json({ error: "Solo clientes" });
@@ -1628,20 +1547,16 @@ app.post("/api/citas/:id_cita/reagendar", verificarToken, async (req, res) => {
 function timeToHHMM(t) {
   if (!t) return null;
 
-  // Si ya es string, lo normalizamos
   if (typeof t === "string") {
-    // "HH:MM" o "HH:MM:SS"
     return t.slice(0, 5);
   }
 
-  // Si viene como objeto Date (mssql TIME -> JS Date)
   if (t instanceof Date) {
     const hh = String(t.getHours()).padStart(2, "0");
     const mm = String(t.getMinutes()).padStart(2, "0");
     return `${hh}:${mm}`;
   }
 
-  // Cualquier otra cosa, lo intentamos como toString
   const s = String(t);
   return s.slice(0, 5);
 }
@@ -1655,11 +1570,9 @@ app.get("/api/horario-dia", verificarToken, async (req, res) => {
     const id_barbero = req.usuario.id;
     const pool = await conectarDB();
 
-    // 1) Día de la semana (0–6)
     const fechaObj = new Date(fecha + "T00:00:00");
-    const diaSemana = fechaObj.getDay(); // 0=Dom...6=Sab
+    const diaSemana = fechaObj.getDay();
 
-    // 2) Obtener horario semanal para ese día (ya incluye viernes)
     const sem = await pool
       .request()
       .input("id_barbero", mssql.Int, id_barbero)
@@ -1672,8 +1585,6 @@ app.get("/api/horario-dia", verificarToken, async (req, res) => {
       `);
 
     const bloques = sem.recordset;
-
-    // Si no hay horario semanal -> día cerrado
     if (bloques.length === 0) {
       return res.json({
         horarioTipo: "semanal",
@@ -1681,16 +1592,14 @@ app.get("/api/horario-dia", verificarToken, async (req, res) => {
       });
     }
 
-    // 3) Generar slots teóricos a partir de los bloques
     const slots = [];
     for (const b of bloques) {
       const dur = b.duracion_minutos || 45;
 
-      // Convertir lo que venga de SQL (Date/string) a "HH:MM"
-      const inicioStr = timeToHHMM(b.hora_inicio); // e.g. "17:30"
-      const finStr = timeToHHMM(b.hora_fin); // e.g. "20:00"
+      const inicioStr = timeToHHMM(b.hora_inicio);
+      const finStr = timeToHHMM(b.hora_fin);
 
-      if (!inicioStr || !finStr) continue; // por seguridad
+      if (!inicioStr || !finStr) continue;
 
       let [hIni, mIni] = inicioStr.split(":").map((n) => parseInt(n));
       let [hFin, mFin] = finStr.split(":").map((n) => parseInt(n));
@@ -1702,14 +1611,13 @@ app.get("/api/horario-dia", verificarToken, async (req, res) => {
         const hh = String(Math.floor(inicioMin / 60)).padStart(2, "0");
         const mm = String(inicioMin % 60).padStart(2, "0");
         slots.push({
-          hora: `${hh}:${mm}`, // "HH:MM"
+          hora: `${hh}:${mm}`,
           disponible: true,
         });
         inicioMin += dur;
       }
     }
 
-    // 4) Traer citas reales de ese día para el barbero
     const citasRes = await pool
       .request()
       .input("id_barbero", mssql.Int, id_barbero)
@@ -1723,10 +1631,9 @@ app.get("/api/horario-dia", verificarToken, async (req, res) => {
 
     const citas = citasRes.recordset || [];
 
-    // 5) Marcar cada slot como disponible u ocupado según las citas
     const citasPorHora = new Map();
     for (const c of citas) {
-      const horaCita = c.hora.slice(0, 5); // "HH:MM"
+      const horaCita = c.hora.slice(0, 5);
       citasPorHora.set(horaCita, c);
     }
 
@@ -1750,7 +1657,6 @@ app.get("/api/horario-dia", verificarToken, async (req, res) => {
 
 function formatTime(dOrStr) {
   if (typeof dOrStr === "string") {
-    // asumir viene como "HH:MM:SS" o "HH:MM"
     return dOrStr.slice(0, 5);
   }
   const h = String(dOrStr.getHours()).padStart(2, "0");
@@ -1880,7 +1786,6 @@ app.patch(
 
       const pool = await conectarDB();
 
-      // 1. Obtener info de la cita (para saber id_barbero)
       const citaRes = await pool.request().input("id_cita", mssql.Int, id_cita)
         .query(`
           SELECT id_barbero
@@ -1894,7 +1799,6 @@ app.patch(
 
       const id_barbero = citaRes.recordset[0].id_barbero;
 
-      // 2. Verificar que el nuevo slot esté libre
       const check = await pool
         .request()
         .input("id_barbero", mssql.Int, id_barbero)
@@ -1916,7 +1820,6 @@ app.patch(
           .json({ error: "El nuevo horario ya está ocupado" });
       }
 
-      // 3. Actualizar fecha y hora
       const upd = await pool
         .request()
         .input("id_cita", mssql.Int, id_cita)
@@ -1954,7 +1857,6 @@ app.post(
       }
 
       if (id_servicio) {
-        // update
         await pool
           .request()
           .input("id_servicio", mssql.Int, id_servicio)
@@ -1966,7 +1868,6 @@ app.post(
           WHERE id_servicio = @id_servicio
         `);
       } else {
-        // insert
         await pool
           .request()
           .input("nombre", mssql.VarChar(50), nombre)
@@ -2049,7 +1950,6 @@ app.get("/api/horario-dia-barbero", verificarToken, async (req, res) => {
 
     console.log("DEBUG slots generados:", slots.length);
 
-    // 👇 Usar nombres correctos de columnas
     const citasRes = await pool
       .request()
       .input("id_barbero", mssql.Int, id_barbero)
@@ -2087,7 +1987,7 @@ app.post(
     try {
       const { id_barbero, fecha, hora, id_servicio, notas, precio_estimado } =
         req.body;
-      const id_usuario = req.usuario.id; // 👈 El cliente autenticado
+      const id_usuario = req.usuario.id;
 
       console.log("DEBUG POST /api/citas:", {
         id_usuario,
@@ -2120,7 +2020,6 @@ app.post(
             "Ya tienes una cita programada en los próximos 30 días. No puedes agendar otra.",
         });
       }
-      // Verificar que el slot siga disponible
       const check = await pool
         .request()
         .input("id_barbero", mssql.Int, id_barbero)
@@ -2138,13 +2037,11 @@ app.post(
         return res.status(400).json({ error: "Este horario ya está ocupado" });
       }
 
-      // Construir URL pública de la foto
       let foto_url = null;
       if (req.file) {
         foto_url = `/uploads/referencias/${req.file.filename}`;
       }
 
-      // Insertar cita con los campos exactos de tu tabla
       await pool
         .request()
         .input("id_usuario", mssql.Int, id_usuario)
@@ -2203,6 +2100,226 @@ app.get("/api/citas/puede-agendar", verificarToken, async (req, res) => {
     res.status(500).json({ error: "Error en el servidor" });
   }
 });
+
+// GET lista de clientes (solo admin)
+app.get("/api/clientes", verificarToken, async (req, res) => {
+  if (req.usuario.rol !== "admin") {
+    return res
+      .status(403)
+      .json({ error: "Solo administradores pueden ver clientes" });
+  }
+
+  try {
+    const pool = await conectarDB();
+
+    const result = await pool.request().query(`
+      SELECT 
+        u.id_usuario,
+        u.nombre,
+        u.email,
+        u.telefono,
+        u.creado_en,
+        COUNT(c.id_cita) AS total_citas,
+        MAX(c.fecha) AS ultima_cita
+      FROM Usuarios u
+      LEFT JOIN Citas c ON u.id_usuario = c.id_usuario
+      WHERE u.rol = 'cliente'
+      GROUP BY u.id_usuario, u.nombre, u.email, u.telefono, u.creado_en
+      ORDER BY u.creado_en DESC
+    `);
+
+    res.json(result.recordset);
+  } catch (error) {
+    console.error("Error al obtener clientes:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// GET detalle de un cliente específico (solo admin)
+app.get("/api/clientes/:id", verificarToken, async (req, res) => {
+  if (req.usuario.rol !== "admin") {
+    return res
+      .status(403)
+      .json({ error: "Solo administradores pueden ver clientes" });
+  }
+
+  const id_cliente = parseInt(req.params.id, 10);
+  if (isNaN(id_cliente)) {
+    return res.status(400).json({ error: "ID de cliente inválido" });
+  }
+
+  try {
+    const pool = await conectarDB();
+
+    // Información del cliente
+    const clienteResult = await pool
+      .request()
+      .input("id_cliente", mssql.Int, id_cliente).query(`
+        SELECT 
+          u.id_usuario,
+          u.nombre,
+          u.email,
+          u.telefono,
+          u.creado_en
+        FROM Usuarios u
+        WHERE u.id_usuario = @id_cliente AND u.rol = 'cliente'
+      `);
+
+    if (!clienteResult.recordset.length) {
+      return res.status(404).json({ error: "Cliente no encontrado" });
+    }
+
+    // Historial de citas del cliente
+    const citasResult = await pool
+      .request()
+      .input("id_cliente", mssql.Int, id_cliente).query(`
+        SELECT 
+          c.id_cita,
+          c.fecha,
+          c.hora,
+          c.estado,
+          c.precio_estimado,
+          s.nombre AS servicio_nombre,
+          b.nombre AS barbero_nombre
+        FROM Citas c
+        JOIN Servicios s ON c.servicio = s.id_servicio
+        JOIN Usuarios b ON c.id_barbero = b.id_usuario
+        WHERE c.id_usuario = @id_cliente
+        ORDER BY c.fecha DESC, c.hora DESC
+      `);
+
+    res.json({
+      cliente: clienteResult.recordset[0],
+      citas: citasResult.recordset,
+    });
+  } catch (error) {
+    console.error("Error al obtener detalle del cliente:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// DELETE eliminar cliente (solo admin)
+app.delete("/api/clientes/:id", verificarToken, async (req, res) => {
+  if (req.usuario.rol !== "admin") {
+    return res
+      .status(403)
+      .json({ error: "Solo administradores pueden eliminar clientes" });
+  }
+
+  const id_cliente = parseInt(req.params.id, 10);
+  if (isNaN(id_cliente)) {
+    return res.status(400).json({ error: "ID de cliente inválido" });
+  }
+
+  try {
+    const pool = await conectarDB();
+
+    // Primero eliminar las citas del cliente
+    await pool
+      .request()
+      .input("id_cliente", mssql.Int, id_cliente)
+      .query(`DELETE FROM Citas WHERE id_usuario = @id_cliente`);
+
+    // Luego eliminar el cliente
+    const result = await pool
+      .request()
+      .input("id_cliente", mssql.Int, id_cliente).query(`
+        DELETE FROM Usuarios 
+        WHERE id_usuario = @id_cliente AND rol = 'cliente';
+        
+        SELECT @@ROWCOUNT AS affected;
+      `);
+
+    if (result.recordset[0].affected === 0) {
+      return res.status(404).json({ error: "Cliente no encontrado" });
+    }
+
+    res.json({ mensaje: "Cliente eliminado correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar cliente:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+// GET /api/usuarios/:id  -> ver perfil (admin o el propio usuario)
+app.get("/api/usuarios/:id", verificarToken, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
+
+  // permiso: admin o usuario mismo
+  if (req.usuario.rol !== "admin" && req.usuario.id !== id) {
+    return res.status(403).json({ error: "No autorizado" });
+  }
+
+  try {
+    const pool = await conectarDB();
+    const result = await pool.request().input("id", mssql.Int, id).query(`
+        SELECT id_usuario, nombre, email, telefono, rol, creado_en
+        FROM Usuarios
+        WHERE id_usuario = @id
+      `);
+
+    if (!result.recordset.length) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json(result.recordset[0]);
+  } catch (err) {
+    console.error("Error GET /api/usuarios/:id", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// PATCH /api/usuarios/:id -> actualizar perfil (admin o propio usuario)
+app.patch("/api/usuarios/:id", verificarToken, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
+
+  // permiso: admin o usuario mismo
+  if (req.usuario.rol !== "admin" && req.usuario.id !== id) {
+    return res.status(403).json({ error: "No autorizado" });
+  }
+
+  const { nombre, email, telefono } = req.body;
+
+  // Validaciones básicas
+  if (!nombre || !email) {
+    return res.status(400).json({ error: "nombre y email son obligatorios" });
+  }
+
+  try {
+    const pool = await conectarDB();
+    const result = await pool
+      .request()
+      .input("id", mssql.Int, id)
+      .input("nombre", mssql.NVarChar(200), nombre)
+      .input("email", mssql.VarChar(200), email)
+      .input("telefono", mssql.VarChar(50), telefono || null).query(`
+        UPDATE Usuarios
+        SET nombre = @nombre,
+            email = @email,
+            telefono = @telefono
+        WHERE id_usuario = @id;
+
+        SELECT id_usuario, nombre, email, telefono, rol, creado_en
+        FROM Usuarios
+        WHERE id_usuario = @id;
+      `);
+
+    const updated = result.recordset[0];
+    if (!updated) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json({ mensaje: "Perfil actualizado", usuario: updated });
+  } catch (err) {
+    console.error("Error PATCH /api/usuarios/:id", err);
+    // Manejar posible duplicado de email (si aplica)
+    if (err && err.number === 2627) {
+      return res.status(400).json({ error: "Email ya registrado" });
+    }
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
 conectarDB()
   .then(() => {
     app.listen(PORT, () => console.log(`Servidor en el puerto ${PORT}`));
@@ -2210,4 +2327,3 @@ conectarDB()
   .catch((err) => {
     console.error("No se pudo iniciar el servidor por error en la BD");
   });
-
