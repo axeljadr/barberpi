@@ -16,7 +16,7 @@ body {
 
 /* Header */
 .header {
-  background-color: #222;
+  background-color: #000000;
   color: white;
   padding: 1rem;
   display: flex;
@@ -44,15 +44,14 @@ body {
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: 20px;
-  background-color: #444;
+  background-color: #404040;
   transition: background-color 0.3s;
 }
 
 .navigation-pill:hover {
-  background-color: #666;
+  color: #000;
+  background-color: #ffffff;
 }
-
-/* Contenido
 
 /* Contenido principal */
 .main-content {
