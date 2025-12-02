@@ -16,19 +16,19 @@
         />
       </div>
       <nav class="navigation-pill-list" aria-label="Navegación principal">
-        <a href="/perfil.html" class="navigation-pill"
+        <a href="/perfil" class="navigation-pill"
           ><span class="title">Mi Perfil</span></a
         >
-        <a href="/homebarber.html" class="navigation-pill"
+        <a href="/homebarber" class="navigation-pill"
           ><span class="title">Inicio</span></a
         >
-        <a href="/barber_agenda.html" class="navigation-pill"
+        <a href="/barber_agenda" class="navigation-pill"
           ><span class="">Agenda</span></a
         >
-        <a href="/notibarbero.html" class="navigation-pill"
+        <a href="/notibarbero" class="navigation-pill"
           ><span class="title">Notificaciones</span></a
         >
-        <a href="/login.html" class="navigation-pill"
+        <a href="/login" class="navigation-pill"
           ><span class="title">Cerrar Sesión</span></a
         >
       </nav>
@@ -105,15 +105,15 @@
           const backdrop = document.createElement("div");
           backdrop.className = "app-modal-backdrop";
           backdrop.innerHTML = `
-            <div class="app-modal" role="dialog" aria-modal="true" tabindex="0">
-              <h3>${title}</h3>
-              <p>${message}</p>
-              <div class="row">
-                <button class="app-btn ghost" id="app-cancel-btn">Cancelar</button>
-                <button class="app-btn primary" id="app-ok-btn">Aceptar</button>
+              <div class="app-modal" role="dialog" aria-modal="true" tabindex="0">
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <div class="row">
+                  <button class="app-btn ghost" id="app-cancel-btn">Cancelar</button>
+                  <button class="app-btn primary" id="app-ok-btn">Aceptar</button>
+                </div>
               </div>
-            </div>
-          `;
+            `;
           modalContainer.appendChild(backdrop);
           const prevOverflow = document.body.style.overflow;
           document.body.style.overflow = "hidden";
@@ -190,7 +190,7 @@
             "error",
             2000
           );
-          setTimeout(() => (window.location.href = "/login.html"), 1400);
+          setTimeout(() => (window.location.href = "/login"), 1400);
           return;
         }
 
@@ -350,35 +350,35 @@
           buttonsHtml += `<button class="btn btn-secondary" data-action="mark-read">Marcar como leída</button>`;
 
         item.innerHTML = `
-          <div class="notification-icon">${iconText}</div>
-          <div class="notification-content">
-            <div class="notification-message">
-              <strong>${notification.title}</strong><br>
-              ${notification.message || ""}
-              ${
-                notification.client
-                  ? `<br><span class="notification-client">Cliente: ${notification.client}</span>`
-                  : ""
-              }
-              ${
-                notification.service
-                  ? `<span class="notification-service"> - ${notification.service}</span>`
-                  : ""
-              }
-              ${
-                notification.date
-                  ? `<br><span class="notification-date">Fecha: ${formatDate(
-                      notification.date
-                    )} a las ${notification.time}</span>`
-                  : ""
-              }
+            <div class="notification-icon">${iconText}</div>
+            <div class="notification-content">
+              <div class="notification-message">
+                <strong>${notification.title}</strong><br>
+                ${notification.message || ""}
+                ${
+                  notification.client
+                    ? `<br><span class="notification-client">Cliente: ${notification.client}</span>`
+                    : ""
+                }
+                ${
+                  notification.service
+                    ? `<span class="notification-service"> - ${notification.service}</span>`
+                    : ""
+                }
+                ${
+                  notification.date
+                    ? `<br><span class="notification-date">Fecha: ${formatDate(
+                        notification.date
+                      )} a las ${notification.time}</span>`
+                    : ""
+                }
+              </div>
+              <div class="notification-meta">
+                <span class="notification-time">${timeAgo}</span>
+                <div class="notification-actions">${buttonsHtml}</div>
+              </div>
             </div>
-            <div class="notification-meta">
-              <span class="notification-time">${timeAgo}</span>
-              <div class="notification-actions">${buttonsHtml}</div>
-            </div>
-          </div>
-        `;
+          `;
 
         item.querySelectorAll("button").forEach((btn) => {
           btn.addEventListener("click", async () => {
@@ -395,7 +395,7 @@
         switch (action) {
           case "view":
             // navegar a agenda con query param (tu código en agenda puede interpretar)
-            window.location.href = `/barber_agenda.html?cita=${
+            window.location.href = `/barber_agenda?cita=${
               notification.id_cita || notification.id
             }`;
             break;
@@ -431,7 +431,7 @@
             break;
           case "reschedule":
             // redirigir a agenda con parámetro de reagendar
-            window.location.href = `/barber_agenda.html?reagendar=${
+            window.location.href = `/barber_agenda?reagendar=${
               notification.id_cita || notification.id
             }`;
             break;
