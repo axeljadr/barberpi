@@ -4,31 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Barber Studio - Agendar Cita</title>
-    <link rel="stylesheet" href="../static/agendar.css" />
+    <link rel="stylesheet" href="/static/agendar.css" />
   </head>
   <body>
     <header class="header">
       <div class="block">
         <img
           class="imagen-de-barberia"
-          src="../images/barber.jpg"
+          src="/images/barber.jpg"
           alt="Logo Barber Studio"
         />
       </div>
       <nav class="navigation-pill-list" aria-label="Navegación principal">
-        <a href="../templates/perfil.html" class="navigation-pill">
+        <a href="/perfil" class="navigation-pill">
           <span class="title">Mi Perfil</span>
         </a>
-        <a href="../templates/home.html" class="navigation-pill">
+        <a href="/home" class="navigation-pill">
           <span class="title">Inicio</span>
         </a>
-        <a href="../templates/agendar.html" class="navigation-pill">
+        <a href="/agendar" class="navigation-pill">
           <span class="">Agendar Cita</span>
         </a>
-        <a href="../templates/notificacion.html" class="navigation-pill">
+        <a href="/notificacion" class="navigation-pill">
           <span class="title">Notificaciones</span>
         </a>
-        <a href="login.html" class="navigation-pill" id="logout-btn">
+        <a href="login" class="navigation-pill" id="logout-btn">
           <span class="title">Cerrar Sesión</span>
         </a>
       </nav>
@@ -71,7 +71,7 @@
             <label class="form-label" for="service">Servicio</label>
             <select id="service" class="form-select">
               <!-- Opciones se llenan por JS -->
-              <option value="">Cargando servicios...</option>
+              <option value="">Cargando servicios.</option>
             </select>
             <div
               id="service-price"
@@ -100,7 +100,7 @@
             <textarea
               id="notes"
               class="form-textarea"
-              placeholder="Especificaciones para tu corte..."
+              placeholder="Especificaciones para tu corte."
             ></textarea>
           </div>
 
@@ -108,7 +108,7 @@
             <label class="form-label">Foto de Referencia</label>
             <div class="photo-upload" id="photo-upload">
               <img
-                src="../images/camara-reflex-digital.png"
+                src="/images/camara-reflex-digital.png"
                 width="50px"
                 alt="foto"
               />
@@ -140,7 +140,7 @@
       <div class="footer-logo">
         <img
           class="imagen-de-barberia"
-          src="../images/barber.jpg"
+          src="/images/barber.jpg"
           alt="Barber Studio Logo"
         />
       </div>
@@ -205,7 +205,10 @@
     </footer>
 
     <script>
-      const API_BASE = "http://localhost:4000/api";
+      const API_BASE =
+        window.location.hostname === "localhost"
+          ? "http://localhost:4000"
+          : "https://barberpi.onrender.com";
       const SINGLE_BARBER_ID = 3;
 
       let currentDate = new Date();
@@ -226,7 +229,7 @@
       async function cargarServicios() {
         const token = getToken();
         const select = document.getElementById("service");
-        select.innerHTML = '<option value="">Cargando servicios...</option>';
+        select.innerHTML = '<option value="">Cargando servicios.</option>';
 
         try {
           const resp = await fetch(`${API_BASE}/servicios`, {
@@ -332,13 +335,13 @@
 
         if (!token) {
           alert("Debes iniciar sesión");
-          window.location.href = "/barberpi/templates/login.html";
+          window.location.href = "/barberpi/login";
           return;
         }
 
         if (rol !== "cliente") {
           alert("Esta página es solo para clientes");
-          window.location.href = "/barberpi/templates/home.html";
+          window.location.href = "/barberpi/home";
           return;
         }
 
@@ -421,7 +424,7 @@
           .addEventListener("click", function (e) {
             e.preventDefault();
             localStorage.clear();
-            window.location.href = "/barberpi/templates/login.html";
+            window.location.href = "/barberpi/login";
           });
       }
 
