@@ -4,29 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Perfil — BarberPI</title>
-
-  <!-- ===== Estilos principales ===== -->
-  <style>
-    #app-notify-root { position: fixed; z-index: 9999; inset: 0; pointer-events: none; }
-    .toast-container { position: fixed; right: 20px; top: 20px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; max-width: 360px; }
-    .app-toast { display:flex; gap:10px; align-items:center; background:#fff; color:#111; padding:10px 12px; border-radius:8px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); font-family: Inter, Roboto, Arial; border-left:6px solid; animation: toast-in .18s ease; }
-    .app-toast .msg { flex:1; font-size:14px; line-height:1.2; }
-    .app-toast .close-btn { background:transparent; border:none; cursor:pointer; font-weight:700; padding:4px 6px; color:#666; }
-    .app-toast.success { border-color: var(--success); }
-    .app-toast.error { border-color: var(--error); }
-    .app-toast.warning { border-color: #f39c12; }
-    .app-toast.info { border-color: #3498db; }
-    @keyframes toast-in { from { transform: translateY(-6px); opacity:0 } to { transform: translateY(0); opacity:1 } }
-
-    .app-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index: 10000; }
-    .app-modal { background:#fff; padding:18px; border-radius:10px; width: 92%; max-width:520px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); font-family: Inter, Roboto, Arial; }
-    .app-modal h3 { margin: 0 0 8px 0; font-size:18px; }
-    .app-modal p { margin:0 0 14px 0; color:#333; font-size:14px; }
-    .app-modal .row { display:flex; gap:10px; justify-content:flex-end; }
-    .app-btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; font-weight:600; }
-    .app-btn.primary { background:var(--accent); color:white; }
-    .app-btn.ghost { background:transparent; border:1px solid #ddd; color:#333; }
-  </style>
+    <link rel="stylesheet" href="/static/perfil.css" />
 </head>
 <body>
   <div class="container">
