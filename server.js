@@ -146,7 +146,7 @@ app.get("/perfil", (req, res) => {
 app.get("/agendar", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "agendar.html"));
 });
-app.get("/barber_agenda", (req, res) => {
+app.get("/agenda", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "barber_agenda.html"));
 });
 
