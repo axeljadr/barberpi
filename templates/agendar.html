@@ -210,12 +210,13 @@
       <div id="app-modal-container"></div>
     </div>
 
+
     <script>
       (function notifyHelpers() {
         const toastContainer = document.getElementById("app-toast-container");
         const modalContainer = document.getElementById("app-modal-container");
 
-        window.await showToast = function (text = "", type = "info", timeout = 3500) {
+        window.showToast = function (text = "", type = "info", timeout = 3500) {
           return new Promise((resolve) => {
             if (!toastContainer) {
               console.warn("Toast container missing:", text);
