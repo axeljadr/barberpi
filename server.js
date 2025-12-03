@@ -1397,45 +1397,6 @@ app.get("/api/citas-dia", verificarToken, async (req, res) => {
   }
 });
 
-app.post("/api/marcar-dia", verificarToken, async (req, res) => {
-  if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
-    return res.status(403).json({ error: "Acceso denegado" });
-  }
-
-  const { fecha, tipo, mensaje } = req.body;
-
-  if (!fecha || !tipo) {
-    return res.status(400).json({ error: "Datos incompletos" });
-  }
-
-  const fechaDate = new Date(fecha);
-  if (isNaN(fechaDate)) {
-    return res.status(400).json({ error: "Fecha inválida" });
-  }
-
-  try {
-    console.log("marcar-dia - datos recibidos:", { id_barbero: req.usuario.id, fecha: fechaDate, tipo, mensaje });
-
-    const pool = await conectarDB();
-
-    await pool
-      .request()
-      .input("id_barbero", mssql.Int, req.usuario.id)
-      .input("fecha", mssql.Date, fechaDate)
-      .input("mensaje", mssql.NVarChar(500), mensaje || tipo)
-      .input("tipo", mssql.VarChar(20), tipo)
-      .query(`
-        INSERT INTO MensajesCalendario (id_barbero, fecha, mensaje, tipo, activo)
-        VALUES (@id_barbero, @fecha, @mensaje, @tipo, 1)
-      `);
-
-    res.json({ mensaje: "Día marcado correctamente" });
-  } catch (err) {
-    console.error("Error al marcar día:", err);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
 app.post("/api/marcar-slot", verificarToken, async (req, res) => {
   if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
     return res.status(403).json({ error: "Acceso denegado" });
