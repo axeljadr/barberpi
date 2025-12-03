@@ -240,7 +240,7 @@
       async function loadNotifications() {
         const token = getToken();
         if (!token) {
-          alert("No estás autenticado. Redirigiendo al login.");
+          await showToast("No estás autenticado. Redirigiendo al login.","error",3000);
           window.location.href = "/";
           return;
         }
@@ -253,7 +253,7 @@
           if (!resp.ok) {
             const text = await resp.text();
             console.error("Error al cargar notificaciones:", resp.status, text);
-            alert("Error al cargar notificaciones");
+            await showToast("Error al cargar notificaciones","error",4000);
             return;
           }
 
@@ -278,7 +278,7 @@
           renderNotifications();
         } catch (err) {
           console.error("Error conexión notificaciones:", err);
-          alert("Error de conexión al cargar notificaciones");
+          await showToast("Error de conexión al cargar notificaciones","error",4000);
         }
       }
 
@@ -440,9 +440,7 @@
                 `¿Confirmar la cita con ${notification.client} para ${notification.service}?`
               )
             ) {
-              // Aquí llamarías a tu endpoint de confirmar cita
-              // Por ejemplo: PATCH /api/citas/:id_cita con estado='confirmada'
-              alert("Cita confirmada");
+              showToast("Cita confirmada", "success",4000);
               markAsRead(id);
             }
             break;
