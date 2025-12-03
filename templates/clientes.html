@@ -33,25 +33,31 @@
         >
       </nav>
     </header>
+    
     <h1>Lista de Clientes</h1>
 
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre Completo</th>
-            <th>Teléfono</th>
-            <th>Email</th>
-            <th>Rol</th>
-          </tr>
-        </thead>
-        <tbody id="client-table-body">
-          <!-- Filas generadas dinámicamente -->
-        </tbody>
-      </table>
-    </div>
-    <footer class="footer">
+    <!-- Campo necesario para que el script no truene -->
+    <input 
+      type="text" 
+      id="search-input" 
+      placeholder="Buscar cliente por nombre o ID..."
+    >
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre Completo</th>
+          <th>Teléfono</th>
+          <th>Email</th>
+          <th>Rol</th>
+        </tr>
+      </thead>
+      <tbody id="client-table-body">
+        <!-- Filas generadas dinámicamente -->
+      </tbody>
+    </table>
+ <footer class="footer">
       <div class="footer-logo">
         <img
           class="imagen-de-barberia"
@@ -173,17 +179,19 @@
         });
       }
 
+      // Buscador
       document.getElementById("search-input").addEventListener("input", function () {
         const searchText = this.value.toLowerCase();
         const rows = document.querySelectorAll("#client-table-body tr");
 
         rows.forEach(row => {
-          const text = row.textContent.toLowerCase();
-          row.style.display = text.includes(searchText) ? "" : "none";
+          const rowText = row.textContent.toLowerCase();
+          row.style.display = rowText.includes(searchText) ? "" : "none";
         });
       });
     </script>
   </body>
 </html>
+
 
 
