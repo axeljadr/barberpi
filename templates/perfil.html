@@ -375,117 +375,120 @@
       nav.appendChild(a);
     });
   }
+      document.addEventListener("DOMContentLoaded", async function () {
+        const token = getToken();
+        const rol = getRol();
+        currentRol = rol;
 
-  document.addEventListener("DOMContentLoaded", async function () {
-    const token = getToken();
-    const rol = getRol();
-    currentRol = rol;
+        if (!token) {
+          alert("Debes iniciar sesión");
+          window.location.href = "/";
+          return;
+        }
 
-    if (!token) {
-      alert("Debes iniciar sesión");
-      window.location.href = "/";
-      return;
-    }
+        try {
+          const resp = await fetch(`${API_AUTH}/perfil`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-    try {
-      const resp = await fetch(`${API_AUTH}/perfil`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          if (resp.status === 401) {
+            alert("Sesión expirada. Vuelve a iniciar sesión.");
+            localStorage.removeItem("token");
+            localStorage.removeItem("rol");
+            window.location.href = "/";
+            return;
+          }
+
+          if (!resp.ok) {
+            const data = await resp.json().catch(() => ({}));
+            alert(data.error || "No se pudo cargar el perfil");
+            return;
+          }
+
+          currentUser = await resp.json();
+          renderNavByRole(currentRol);
+          loadUserDataFromBackend(currentUser);
+          configureRoleFieldByPermission();
+
+          document
+            .getElementById("photo-file-input")
+            .addEventListener("change", function (e) {
+              if (e.target.files && e.target.files[0]) {
+                selectedPhotoFile = e.target.files[0];
+                document.getElementById("file-name").textContent =
+                  selectedPhotoFile.name;
+
+                const reader = new FileReader();
+                reader.onload = function (e2) {
+                  document.getElementById("photo-preview").src =
+                    e2.target.result;
+                };
+                reader.readAsDataURL(selectedPhotoFile);
+              }
+            });
+
+          document
+            .getElementById("profile-form")
+            .addEventListener("submit", function (e) {
+              e.preventDefault();
+              saveUserDataToBackend();
+            });
+        } catch (err) {
+          console.error("Error al cargar perfil:", err);
+          alert("Error de conexión al cargar tu perfil");
+        }
       });
 
-      if (resp.status === 401) {
-        alert("Sesión expirada. Vuelve a iniciar sesión.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("rol");
-        window.location.href = "/login";
-        return;
+      function loadUserDataFromBackend(user) {
+        document.getElementById("id_usuario").value = user.id_usuario;
+        document.getElementById("nombre").value = user.nombre || "";
+        document.getElementById("apellidoP").value = user.apellidoP || "";
+        document.getElementById("apellidoM").value = user.apellidoM || "";
+        document.getElementById("edad").value = user.edad || "";
+        document.getElementById("email").value = user.email || "";
+        document.getElementById("telefono").value = user.telefono || "";
+        document.getElementById("rol").value = user.rol || "cliente";
+
+        updateDisplay(user);
       }
 
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        alert(data.error || "No se pudo cargar el perfil");
-        return;
+      function updateDisplay(user) {
+        const nombreCompleto = `${user.nombre || ""} ${user.apellidoP || ""} ${
+          user.apellidoM || ""
+        }`.trim();
+
+        document.getElementById("display-name").textContent =
+          nombreCompleto || "Ingresa tus datos";
+        document.getElementById("display-role").textContent =
+          (user.rol || "cliente").charAt(0).toUpperCase() +
+          (user.rol || "cliente").slice(1);
+        document.getElementById("display-id").textContent =
+          user.id_usuario || "-";
+
+        const fotoUrl =
+          user.foto_perfil || "/barberpi/images/default-avatar.jpg";
+        const fotoCompleta = fotoUrl.startsWith("http")
+          ? fotoUrl
+          : `${fotoUrl}`;
+
+        document.getElementById("profile-picture").src = fotoCompleta;
+        document.getElementById("photo-preview").src = fotoCompleta;
       }
 
-      currentUser = await resp.json();
-      renderNavByRole(currentRol);
-      loadUserDataFromBackend(currentUser);
-      configureRoleFieldByPermission();
+      function configureRoleFieldByPermission() {
+        const rolSelect = document.getElementById("rol");
 
-      document
-        .getElementById("photo-file-input")
-        .addEventListener("change", function (e) {
-          if (e.target.files && e.target.files[0]) {
-            selectedPhotoFile = e.target.files[0];
-            document.getElementById("file-name").textContent =
-              selectedPhotoFile.name;
+        if (!rolSelect) return;
 
-            const reader = new FileReader();
-            reader.onload = function (e2) {
-              document.getElementById("photo-preview").src = e2.target.result;
-            };
-            reader.readAsDataURL(selectedPhotoFile);
-          }
-        });
-
-      document
-        .getElementById("profile-form")
-        .addEventListener("submit", function (e) {
-          e.preventDefault();
-          saveUserDataToBackend();
-        });
-    } catch (err) {
-      console.error("Error al cargar perfil:", err);
-      alert("Error de conexión al cargar tu perfil");
-    }
-  });
-
-  function loadUserDataFromBackend(user) {
-    document.getElementById("id_usuario").value = user.id_usuario;
-    document.getElementById("nombre").value = user.nombre || "";
-    document.getElementById("apellidoP").value = user.apellidoP || "";
-    document.getElementById("apellidoM").value = user.apellidoM || "";
-    document.getElementById("edad").value = user.edad || "";
-    document.getElementById("email").value = user.email || "";
-    document.getElementById("telefono").value = user.telefono || "";
-    document.getElementById("rol").value = user.rol || "cliente";
-
-    updateDisplay(user);
-  }
-
-  function updateDisplay(user) {
-    const nombreCompleto = `${user.nombre || ""} ${user.apellidoP || ""} ${
-      user.apellidoM || ""
-    }`.trim();
-
-    document.getElementById("display-name").textContent =
-      nombreCompleto || "Ingresa tus datos";
-    document.getElementById("display-role").textContent =
-      (user.rol || "cliente").charAt(0).toUpperCase() +
-      (user.rol || "cliente").slice(1);
-    document.getElementById("display-id").textContent = user.id_usuario || "-";
-
-    const fotoUrl = user.foto_perfil || "/images/default-avatar.jpg";
-    const fotoCompleta = normalizeImageUrl(fotoUrl);
-
-    document.getElementById("profile-picture").src = fotoCompleta;
-    document.getElementById("photo-preview").src = fotoCompleta;
-  }
-
-  function configureRoleFieldByPermission() {
-    const rolSelect = document.getElementById("rol");
-
-    if (!rolSelect) return;
-
-    if (currentRol === "admin") {
-      rolSelect.disabled = false;
-    } else {
-      rolSelect.disabled = true;
-    }
-  }
-
+        if (currentRol === "admin") {
+          rolSelect.disabled = false;
+        } else {
+          rolSelect.disabled = true;
+        }
+      }
 
       function openPhotoModal() {
         document.getElementById("photo-modal").style.display = "flex";
@@ -495,7 +498,7 @@
         document.getElementById("photo-file-input").value = "";
 
         const fotoActual =
-          currentUser.foto_perfil || "/images/default-avatar.jpg";
+          currentUser.foto_perfil || "/barberpi/images/default-avatar.jpg";
         const fotoCompleta = fotoActual.startsWith("http")
           ? fotoActual
           : `${fotoActual}`;
@@ -547,71 +550,71 @@
         }
       }
 
-  async function saveUserDataToBackend() {
-    const token = getToken();
-    if (!token) {
-      alert("Debes iniciar sesión");
-      window.location.href = "/";
-      return;
-    }
+      async function saveUserDataToBackend() {
+        const token = getToken();
+        if (!token) {
+          alert("Debes iniciar sesión");
+          window.location.href = "/";
+          return;
+        }
 
-    const body = {
-      nombre: document.getElementById("nombre").value.trim(),
-      apellidoP: document.getElementById("apellidoP").value.trim(),
-      apellidoM: document.getElementById("apellidoM").value.trim(),
-      edad: parseInt(document.getElementById("edad").value, 10) || null,
-      email: document.getElementById("email").value.trim(),
-      telefono: document.getElementById("telefono").value.trim(),
-      foto_perfil: currentUser.foto_perfil,
-      rol:
-        currentRol === "admin"
-          ? document.getElementById("rol").value
-          : currentUser.rol,
-    };
+        const body = {
+          nombre: document.getElementById("nombre").value.trim(),
+          apellidoP: document.getElementById("apellidoP").value.trim(),
+          apellidoM: document.getElementById("apellidoM").value.trim(),
+          edad: parseInt(document.getElementById("edad").value, 10) || null,
+          email: document.getElementById("email").value.trim(),
+          telefono: document.getElementById("telefono").value.trim(),
+          foto_perfil: currentUser.foto_perfil,
+          rol:
+            currentRol === "admin"
+              ? document.getElementById("rol").value
+              : currentUser.rol,
+        };
 
-    try {
-      const resp = await fetch(`${API_AUTH}/perfil`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
+        try {
+          const resp = await fetch(`${API_AUTH}/perfil`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(body),
+          });
 
-      const data = await resp.json().catch(() => ({}));
+          const data = await resp.json().catch(() => ({}));
 
-      if (!resp.ok) {
-        alert(data.error || "No se pudo actualizar el perfil");
-        return;
+          if (!resp.ok) {
+            alert(data.error || "No se pudo actualizar el perfil");
+            return;
+          }
+
+          currentUser = {
+            ...currentUser,
+            ...body,
+          };
+
+          updateDisplay(currentUser);
+
+          if (currentRol === "admin" && currentUser.rol !== currentRol) {
+            localStorage.setItem("rol", currentUser.rol);
+            currentRol = currentUser.rol;
+            configureRoleFieldByPermission();
+          }
+
+          alert("Perfil actualizado correctamente");
+        } catch (err) {
+          console.error("Error al actualizar perfil:", err);
+          alert("Error de conexión al actualizar el perfil");
+        }
       }
 
-      currentUser = {
-        ...currentUser,
-        ...body,
-      };
-
-      updateDisplay(currentUser);
-
-      if (currentRol === "admin" && currentUser.rol !== currentRol) {
-        localStorage.setItem("rol", currentUser.rol);
-        currentRol = currentUser.rol;
-        configureRoleFieldByPermission();
+      function resetForm() {
+        if (currentUser) {
+          loadUserDataFromBackend(currentUser);
+          configureRoleFieldByPermission();
+        }
       }
-
-      alert("Perfil actualizado correctamente");
-    } catch (err) {
-      console.error("Error al actualizar perfil:", err);
-      alert("Error de conexión al actualizar el perfil");
-    }
-  }
-
-  function resetForm() {
-    if (currentUser) {
-      loadUserDataFromBackend(currentUser);
-      configureRoleFieldByPermission();
-    }
-  }
-</script>
+    </script>
   </body>
 </html>
