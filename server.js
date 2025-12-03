@@ -152,6 +152,7 @@ function verificarToken(req, res, next) {
     return res.status(401).json({ error: "Token inválido o expirado" });
   }
 }
+app.set('trust proxy', true);
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "login.html"));
 });
@@ -294,107 +295,95 @@ app.get("/api/auth/perfil", verificarToken, async (req, res) => {
         WHERE id_usuario = @id_usuario
       `);
 
-    if (result.recordset.length === 0) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
-    }
+    if (result.recordset.length === 0) return res.status(404).json({ error: "Usuario no encontrado" });
 
     const user = result.recordset[0];
-    // Normalizar foto_perfil a URL absoluta (si viene relativa, usar req)
-    user.foto_perfil = user.foto_perfil
-      ? ensureAbsoluteUrl(user.foto_perfil, req)
-      : null;
 
-    res.json(user);
+    user.foto_perfil = user.foto_perfil ? ensureAbsoluteUrl(user.foto_perfil, req) : null;
+
+    return res.json(user);
   } catch (err) {
-    console.error("Error en GET /api/auth/perfil:", err);
-    res.status(500).json({ error: "Error interno del servidor" });
+    console.error("Error GET /api/auth/perfil:", err);
+    return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
-
-app.put("/api/auth/perfil/foto", verificarToken, upload.single("foto"), async (req, res) => {
+app.put("/api/auth/perfil/foto", verificarToken, uploadPerfil.single("foto"), async (req, res) => {
   try {
+    console.log("PUT /api/auth/perfil/foto - req.file:", !!req.file, req.file && req.file.path);
+
     if (!req.file) {
       return res.status(400).json({ error: "Debes enviar una imagen en campo 'foto'." });
     }
 
     const pool = await conectarDB();
 
-    // Construir URL absoluta para la nueva foto (usando host actual)
-    const nuevaUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    const nuevaUrl = `${req.protocol}://${req.get("host")}/uploads/fotosdeperfil/${req.file.filename}`;
 
-    // Recuperar foto anterior
-    const userRes = await pool
-      .request()
+    const userRes = await pool.request()
       .input("id_usuario", mssql.Int, req.usuario.id)
-      .query(`SELECT foto_perfil FROM Usuarios WHERE id_usuario = @id_usuario`);
+      .query("SELECT foto_perfil FROM Usuarios WHERE id_usuario = @id_usuario");
 
     const fotoAnterior = userRes.recordset.length ? userRes.recordset[0].foto_perfil : null;
 
-    // Actualizar DB con la nueva URL absoluta
-    await pool
-      .request()
+    await pool.request()
       .input("id_usuario", mssql.Int, req.usuario.id)
       .input("foto_perfil", mssql.VarChar, nuevaUrl)
-      .query(`
-        UPDATE Usuarios SET foto_perfil = @foto_perfil WHERE id_usuario = @id_usuario
-      `);
+      .query("UPDATE Usuarios SET foto_perfil = @foto_perfil WHERE id_usuario = @id_usuario");
 
-    // Borrar foto anterior si era local (/uploads/...)
     const localPath = getLocalPathFromUrl(fotoAnterior);
     if (localPath) {
+      console.log("Borrando foto anterior local:", localPath);
       fs.unlink(localPath, (err) => {
         if (err) console.warn("No se pudo borrar foto anterior:", err.message);
       });
+    } else {
+      console.log("Foto anterior no es local o no existe (no se borra):", fotoAnterior);
     }
 
-    res.json({ mensaje: "Foto de perfil actualizada", foto_perfil: nuevaUrl });
+    return res.json({ mensaje: "Foto de perfil actualizada", foto_perfil: nuevaUrl });
   } catch (err) {
-    console.error("Error en PUT /api/auth/perfil/foto:", err);
-    res.status(500).json({ error: "Error interno del servidor" });
+    console.error("Error PUT /api/auth/perfil/foto:", err);
+    return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-
-app.put("/api/auth/perfil/foto", verificarToken, upload.single("foto"), async (req, res) => {
+app.put("/api/auth/perfil/foto", verificarToken, uploadPerfil.single("foto"), async (req, res) => {
   try {
+    console.log("PUT /api/auth/perfil/foto - req.file:", !!req.file, req.file && req.file.path);
+
     if (!req.file) {
       return res.status(400).json({ error: "Debes enviar una imagen en campo 'foto'." });
     }
 
     const pool = await conectarDB();
 
-    // Construir URL absoluta para la nueva foto (usando host actual)
-    const nuevaUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    const nuevaUrl = `${req.protocol}://${req.get("host")}/uploads/fotosdeperfil/${req.file.filename}`;
 
-    // Recuperar foto anterior
-    const userRes = await pool
-      .request()
+    const userRes = await pool.request()
       .input("id_usuario", mssql.Int, req.usuario.id)
-      .query(`SELECT foto_perfil FROM Usuarios WHERE id_usuario = @id_usuario`);
+      .query("SELECT foto_perfil FROM Usuarios WHERE id_usuario = @id_usuario");
 
     const fotoAnterior = userRes.recordset.length ? userRes.recordset[0].foto_perfil : null;
 
-    // Actualizar DB con la nueva URL absoluta
-    await pool
-      .request()
+    await pool.request()
       .input("id_usuario", mssql.Int, req.usuario.id)
       .input("foto_perfil", mssql.VarChar, nuevaUrl)
-      .query(`
-        UPDATE Usuarios SET foto_perfil = @foto_perfil WHERE id_usuario = @id_usuario
-      `);
+      .query("UPDATE Usuarios SET foto_perfil = @foto_perfil WHERE id_usuario = @id_usuario");
 
-    // Borrar foto anterior si era local (/uploads/...)
     const localPath = getLocalPathFromUrl(fotoAnterior);
     if (localPath) {
+      console.log("Borrando foto anterior local:", localPath);
       fs.unlink(localPath, (err) => {
         if (err) console.warn("No se pudo borrar foto anterior:", err.message);
       });
+    } else {
+      console.log("Foto anterior no es local o no existe (no se borra):", fotoAnterior);
     }
 
-    res.json({ mensaje: "Foto de perfil actualizada", foto_perfil: nuevaUrl });
+    return res.json({ mensaje: "Foto de perfil actualizada", foto_perfil: nuevaUrl });
   } catch (err) {
-    console.error("Error en PUT /api/auth/perfil/foto:", err);
-    res.status(500).json({ error: "Error interno del servidor" });
+    console.error("Error PUT /api/auth/perfil/foto:", err);
+    return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
