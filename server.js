@@ -287,18 +287,10 @@ app.get("/api/auth/perfil", verificarToken, async (req, res) => {
     const pool = await conectarDB();
     const result = await pool
       .request()
-      .input("id_usuario", mssql.Int, req.usuario.id).query(`
-        SELECT 
-          id_usuario,
-          nombre,
-          apellidoP,
-          apellidoM,
-          edad,
-          email,
-          telefono,
-          foto_perfil,
-          rol
-        FROM usuarios
+      .input("id_usuario", mssql.Int, req.usuario.id)
+      .query(`
+        SELECT id_usuario, nombre, apellidoP, apellidoM, edad, email, telefono, rol, foto_perfil
+        FROM Usuarios
         WHERE id_usuario = @id_usuario
       `);
 
@@ -306,124 +298,105 @@ app.get("/api/auth/perfil", verificarToken, async (req, res) => {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    res.json(result.recordset[0]);
-  } catch (error) {
-    console.error("Error en GET /perfil:", error);
+    const user = result.recordset[0];
+    // Normalizar foto_perfil a URL absoluta (si viene relativa, usar req)
+    user.foto_perfil = user.foto_perfil
+      ? ensureAbsoluteUrl(user.foto_perfil, req)
+      : null;
+
+    res.json(user);
+  } catch (err) {
+    console.error("Error en GET /api/auth/perfil:", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
 
-app.put("/api/auth/perfil", verificarToken, async (req, res) => {
-  const {
-    nombre,
-    apellidoP,
-    apellidoM,
-    edad,
-    email,
-    telefono,
-    foto_perfil,
-    rol,
-  } = req.body;
-
+app.put("/api/auth/perfil/foto", verificarToken, upload.single("foto"), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ error: "Debes enviar una imagen en campo 'foto'." });
+    }
+
     const pool = await conectarDB();
+
+    // Construir URL absoluta para la nueva foto (usando host actual)
+    const nuevaUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+
+    // Recuperar foto anterior
+    const userRes = await pool
+      .request()
+      .input("id_usuario", mssql.Int, req.usuario.id)
+      .query(`SELECT foto_perfil FROM Usuarios WHERE id_usuario = @id_usuario`);
+
+    const fotoAnterior = userRes.recordset.length ? userRes.recordset[0].foto_perfil : null;
+
+    // Actualizar DB con la nueva URL absoluta
     await pool
       .request()
-      .input("id", mssql.Int, req.usuario.id)
-      .input("nombre", mssql.NVarChar, nombre)
-      .input("apellidoP", mssql.NVarChar, apellidoP || null)
-      .input("apellidoM", mssql.NVarChar, apellidoM || null)
-      .input("edad", mssql.Int, edad || null)
-      .input("email", mssql.NVarChar, email)
-      .input("telefono", mssql.NVarChar, telefono || null)
-      .input("foto_perfil", mssql.NVarChar, foto_perfil || null)
-      .input("rol", mssql.NVarChar, rol || "cliente").query(`
-        UPDATE usuarios
-        SET 
-          nombre = @nombre,
-          apellidoP = @apellidoP,
-          apellidoM = @apellidoM,
-          edad = @edad,
-          email = @email,
-          telefono = @telefono,
-          foto_perfil = @foto_perfil,
-          rol = @rol
-        WHERE id_usuario = @id
+      .input("id_usuario", mssql.Int, req.usuario.id)
+      .input("foto_perfil", mssql.VarChar, nuevaUrl)
+      .query(`
+        UPDATE Usuarios SET foto_perfil = @foto_perfil WHERE id_usuario = @id_usuario
       `);
 
-    res.json({ mensaje: "Perfil actualizado correctamente" });
-  } catch (error) {
-    console.error("Error en PUT /perfil:", error);
+    // Borrar foto anterior si era local (/uploads/...)
+    const localPath = getLocalPathFromUrl(fotoAnterior);
+    if (localPath) {
+      fs.unlink(localPath, (err) => {
+        if (err) console.warn("No se pudo borrar foto anterior:", err.message);
+      });
+    }
+
+    res.json({ mensaje: "Foto de perfil actualizada", foto_perfil: nuevaUrl });
+  } catch (err) {
+    console.error("Error en PUT /api/auth/perfil/foto:", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
-app.put(
-  "/api/auth/perfil/foto",
-  verificarToken,
-  uploadPerfil.single("foto"),
-  async (req, res) => {
+app.put("/api/auth/perfil/foto", verificarToken, upload.single("foto"), async (req, res) => {
+  try {
     if (!req.file) {
-      return res.status(400).json({ error: "No se recibió ninguna imagen" });
+      return res.status(400).json({ error: "Debes enviar una imagen en campo 'foto'." });
     }
 
-    const url_foto = `/uploads/fotosdeperfil/${req.file.filename}`;
+    const pool = await conectarDB();
 
-    try {
-      const pool = await conectarDB();
+    // Construir URL absoluta para la nueva foto (usando host actual)
+    const nuevaUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
 
-      const userResult = await pool
-        .request()
-        .input("id_usuario", mssql.Int, req.usuario.id).query(`
-          SELECT foto_perfil 
-          FROM usuarios 
-          WHERE id_usuario = @id_usuario
-        `);
+    // Recuperar foto anterior
+    const userRes = await pool
+      .request()
+      .input("id_usuario", mssql.Int, req.usuario.id)
+      .query(`SELECT foto_perfil FROM Usuarios WHERE id_usuario = @id_usuario`);
 
-      const fotoAnterior =
-        userResult.recordset.length > 0
-          ? userResult.recordset[0].foto_perfil
-          : null;
+    const fotoAnterior = userRes.recordset.length ? userRes.recordset[0].foto_perfil : null;
 
-      await pool
-        .request()
-        .input("id_usuario", mssql.Int, req.usuario.id)
-        .input("foto_perfil", mssql.NVarChar(255), url_foto).query(`
-          UPDATE usuarios
-          SET foto_perfil = @foto_perfil
-          WHERE id_usuario = @id_usuario
-        `);
+    // Actualizar DB con la nueva URL absoluta
+    await pool
+      .request()
+      .input("id_usuario", mssql.Int, req.usuario.id)
+      .input("foto_perfil", mssql.VarChar, nuevaUrl)
+      .query(`
+        UPDATE Usuarios SET foto_perfil = @foto_perfil WHERE id_usuario = @id_usuario
+      `);
 
-      if (
-        fotoAnterior &&
-        fotoAnterior.startsWith("/uploads/fotosdeperfil/") &&
-        fotoAnterior !== url_foto
-      ) {
-        try {
-          const filePath = path.join(
-            __dirname,
-            fotoAnterior.replace("/uploads/", "uploads/")
-          );
-          fs.unlink(filePath, (err) => {
-            if (err)
-              console.warn("No se pudo borrar foto anterior:", err.message);
-          });
-        } catch (e) {
-          console.warn("Error al intentar eliminar foto anterior:", e);
-        }
-      }
-
-      res.json({
-        mensaje: "Foto de perfil actualizada correctamente",
-        foto_perfil: url_foto,
+    // Borrar foto anterior si era local (/uploads/...)
+    const localPath = getLocalPathFromUrl(fotoAnterior);
+    if (localPath) {
+      fs.unlink(localPath, (err) => {
+        if (err) console.warn("No se pudo borrar foto anterior:", err.message);
       });
-    } catch (error) {
-      console.error("Error al actualizar foto de perfil:", error);
-      res.status(500).json({ error: "Error interno del servidor" });
     }
+
+    res.json({ mensaje: "Foto de perfil actualizada", foto_perfil: nuevaUrl });
+  } catch (err) {
+    console.error("Error en PUT /api/auth/perfil/foto:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
-);
+});
 
 app.post(
   "/api/catalogo",
