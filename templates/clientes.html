@@ -4,243 +4,111 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Clientes - BarberPi</title>
-
-    <link rel="stylesheet" href="/static/barbera.css" />
-    <link rel="stylesheet" href="/static/clientes.css" />
+    <link rel="stylesheet" href="/static/clientes.css">
+     <link rel="stylesheet" href="/static/barbera.css" />
   </head>
   <body>
-    <header class="header">
-      <div class="block">
-        <img
-          class="imagen-de-barberia"
-          src="/images/barber.jpg"
-          alt="Logo Barber Studio"
-        />
-      </div>
-      <nav class="navigation-pill-list" aria-label="Navegación principal">
-        <a href="/perfil" class="navigation-pill">
-          <span class="title">Mi Perfil</span>
-        </a>
-        <a href="/homebarber" class="navigation-pill">
-          <span class="title">Inicio</span>
-        </a>
-        <a href="/clientes" class="navigation-pill">
-          <span class="title">Inicio</span>
-        </a>
-        <a href="/barber_agenda" class="navigation-pill">
-          <span class="">Agenda</span>
-        </a>
-        <a href="/notibarbero" class="navigation-pill">
-          <span class="title">Notificaciones</span>
-        </a>
-        <a href="/" class="navigation-pill">
-          <span class="title">Cerrar Sesión</span>
-        </a>
-      </nav>
-    </header>
-
-    <!-- === Main: sección de tabla (está separada y limpia) === -->
-    <main class="main-content" id="clients-app" data-module="clients">
-      <div class="panel-header">
-        <h1 class="panel-title">Clientes</h1>
-
-        <div class="panel-actions" role="group" aria-label="Acciones">
-          <button id="btn-create" class="btn btn-primary" type="button">
-            + Nuevo
-          </button>
-          <button id="btn-refresh" class="btn btn-secondary" type="button">
-            Actualizar
-          </button>
-        </div>
-      </div>
-
-      <div class="controls-row">
-        <div class="search-container">
-          <label for="search" class="visually-hidden">Buscar clientes</label>
-          <input
-            id="search"
-            class="search-input"
-            type="search"
-            placeholder="Buscar por nombre, email o teléfono"
-            autocomplete="off"
-          />
+    <div class="container">
+      <header class="header" role="banner">
+        <div class="brand">
+          <img src="/images/barber.jpg" alt="Barber Studio" />
+          <div>
+            <h1 class="panel-title">Clientes</h1>
+            <div style="color:var(--muted); font-size:13px">Panel de clientes</div>
+          </div>
         </div>
 
-        <div class="pagination-controls">
-          <label for="pageSize" class="visually-hidden"
-            >Elementos por página</label
-          >
-          <select
-            id="pageSize"
-            class="select"
-            aria-label="Elementos por página"
-          >
-            <option value="10">10</option>
-            <option value="25" selected>25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-        </div>
-      </div>
+        <nav class="navigation-pill-list" aria-label="Navegación principal">
+          <a href="/homebarber" class="nav-pill">Inicio</a>
+          <a href="/barber_agenda" class="nav-pill">Agenda</a>
+          <a href="/notibarbero" class="nav-pill">Notificaciones</a>
+          <a href="/perfil" class="nav-pill">Mi perfil</a>
+          <a href="/" class="nav-pill">Cerrar sesión</a>
+        </nav>
+      </header>
 
-      <section class="stats-container" aria-hidden="false">
-        <div class="stat-card">
-          <div class="stat-number" id="stat-total">—</div>
-          <div class="stat-label">clientes totales</div>
+      <main class="panel" id="clients-app" data-module="clients" role="main">
+        <div class="panel-header">
+          <div>
+            <h2 style="margin:0">Lista de clientes</h2>
+            <div style="color:var(--muted); font-size:13px">Buscar y gestionar clientes</div>
+          </div>
+          <div class="panel-actions" role="group" aria-label="Acciones">
+            <!-- Se eliminó +Nuevo según petición -->
+            <button id="btn-refresh" class="btn btn-secondary" type="button">Actualizar</button>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-number" id="stat-with-citas">—</div>
-          <div class="stat-label">clientes con citas completadas</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="stat-avg-citas">—</div>
-          <div class="stat-label">promedio citas completadas</div>
-        </div>
-      </section>
 
-      <section class="clients-table" aria-labelledby="clients-table-heading">
-        <h2 id="clients-table-heading" class="visually-hidden">
-          Tabla de clientes
-        </h2>
-        <table class="table" id="clients-table" aria-describedby="table-desc">
-          <caption id="table-desc" class="visually-hidden">
-            Lista de clientes con teléfono, email, fecha de registro y número de
-            citas completadas
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Nombre completo</th>
-              <th scope="col">Teléfono</th>
-              <th scope="col">Email</th>
-              <th scope="col">Fecha registro</th>
-              <th scope="col" style="text-align: center">Citas completadas</th>
-              <th scope="col">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="clients-tbody">
-            <tr>
-              <td colspan="6" class="empty">Cargando...</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+        <div class="controls-row">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <label for="search" class="visually-hidden">Buscar</label>
+            <input id="search" class="search-input" type="search" placeholder="Buscar por nombre, email o teléfono" autocomplete="off"/>
+          </div>
 
-      <div class="pager">
-        <div id="pager-info" class="pager-info" aria-live="polite"></div>
-        <div class="pager-buttons">
-          <button id="prev" class="btn btn-secondary">Anterior</button>
-          <button id="next" class="btn btn-secondary">Siguiente</button>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <label for="pageSize" class="visually-hidden">Elementos por página</label>
+            <select id="pageSize" class="select" aria-label="Elementos por página">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
         </div>
-      </div>
-    </main>
 
-    <!-- === Modal Perfil (sin estilos inline) === -->
-    <div
-      id="profile-modal"
-      class="modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="profile-title"
-      hidden
-    >
-      <div class="modal-content">
-        <header class="modal-header">
-          <h3 id="profile-title" class="modal-title">Perfil</h3>
-          <button id="close-profile" class="close-modal" aria-label="Cerrar">
-            &times;
-          </button>
-        </header>
-        <div id="profile-body" class="profile-body" tabindex="0">
-          <!-- contenido cargado por JS -->
+        <section class="stats" aria-hidden="false" style="margin-bottom:12px;">
+          <div class="stat-card" role="status" aria-live="polite">
+            <div class="stat-number" id="stat-total">—</div>
+            <div class="stat-label">clientes totales</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="stat-with-citas">—</div>
+            <div class="stat-label">clientes con citas completadas</div>
+          </div>
+          <!-- eliminado promedio -->
+        </section>
+
+        <section aria-labelledby="clients-table-heading">
+          <h3 id="clients-table-heading" class="visually-hidden">Tabla de clientes</h3>
+
+          <table class="table" id="clients-table" aria-describedby="table-desc">
+            <caption id="table-desc" class="visually-hidden">Lista de clientes con teléfono, email, fecha de registro y número de citas completadas</caption>
+            <thead>
+              <tr>
+                <th scope="col">Nombre completo</th>
+                <th scope="col">Teléfono</th>
+                <th scope="col">Email</th>
+                <th scope="col">Fecha registro</th>
+                <th scope="col" style="text-align:center">Citas completadas</th>
+                <th scope="col">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="clients-tbody">
+              <tr><td colspan="6" class="empty">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <div class="pager" aria-label="Paginación">
+          <div id="pager-info" class="pager-info" aria-live="polite"></div>
+          <div style="display:flex; gap:8px;">
+            <button id="prev" class="btn btn-secondary">Anterior</button>
+            <button id="next" class="btn btn-secondary">Siguiente</button>
+          </div>
         </div>
-        <footer class="modal-footer">
-          <button id="open-profile-template" class="btn btn-secondary">
-            Generar plantilla
-          </button>
-          <button id="close-profile-2" class="btn btn-primary">Cerrar</button>
-        </footer>
-      </div>
+      </main>
     </div>
 
-    <!-- === Footer (NO MODIFICAR) === -->
-    <footer class="footer">
-      <div class="footer-logo">
-        <img
-          class="imagen-de-barberia"
-          src="/images/barber.jpg"
-          alt="Barber Studio Logo"
-        />
-      </div>
-      <nav class="text-link-list" aria-labelledby="footer-contact">
-        <div class="text-strong-wrapper">
-          <h2 id="footer-contact" class="text-strong">
-            <span class="text-strong-2">contacto</span>
-          </h2>
-        </div>
-        <ul class="footer-list">
-          <li class="text-link-list-item">
-            <a href="tel:9837324637" class="list-item">9837324637</a>
-          </li>
-          <li class="text-link-list-item">
-            <a href="mailto:barberpi@utttn.mx" class="list-item-2"
-              >barberpi@uttn.mx</a
-            >
-          </li>
-        </ul>
-      </nav>
-      <nav class="text-link-list" aria-labelledby="footer-location">
-        <div class="text-strong-wrapper">
-          <h2 id="footer-location" class="text-strong">
-            <span class="text-strong-2">ubicación</span>
-          </h2>
-        </div>
-        <ul class="footer-list">
-          <li class="text-link-list-item">
-            <a
-              href="https://maps.app.goo.gl/ZD5gur5vPiwKMVCW9?g_st=iw"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="list-item-7"
-              >google.maps/micasa</a
-            >
-          </li>
-        </ul>
-      </nav>
-      <nav class="text-link-list" aria-labelledby="footer-creator">
-        <div class="text-strong-wrapper">
-          <h2 id="footer-creator" class="text-strong">
-            <span class="">creado por:</span>
-          </h2>
-        </div>
-        <ul class="footer-list">
-          <li class="text-link-list-item">
-            <span class="list-item-11">Axel Rivera</span>
-          </li>
-          <li class="text-link-list-item">
-            <span class="list-item-12">contactos:</span>
-          </li>
-          <li class="text-link-list-item">
-            <a href="mailto:axel.delgado@uttn.mx" class="list-item-13"
-              >axel.delgado@uttn.mx</a
-            >
-          </li>
-          <li class="text-link-list-item">
-            <a href="tel:8994287620" class="list-item">8994287620</a>
-          </li>
-        </ul>
-      </nav>
-    </footer>
-
-    <!-- JS (separado, modular) -->
     <script>
       (function () {
+        // API base: si estás en desarrollo usa localhost:4000
         const API_BASE =
           window.location.hostname.includes("localhost") ||
           window.location.hostname === "127.0.0.1"
             ? "http://localhost:4000/api"
             : `${window.location.origin}/api`;
 
-        // elemento raíz
+        // elementos
         const el = {
           search: document.getElementById("search"),
           pageSize: document.getElementById("pageSize"),
@@ -250,35 +118,15 @@
           pagerInfo: document.getElementById("pager-info"),
           statTotal: document.getElementById("stat-total"),
           statWithCitas: document.getElementById("stat-with-citas"),
-          statAvgCitas: document.getElementById("stat-avg-citas"),
           btnRefresh: document.getElementById("btn-refresh"),
-          btnCreate: document.getElementById("btn-create"),
-          profileModal: document.getElementById("profile-modal"),
-          profileBody: document.getElementById("profile-body"),
-          closeProfile: document.getElementById("close-profile"),
-          closeProfile2:
-            document.getElementById("close-profile-2") ||
-            document.getElementById("close-profile"),
-          openProfileTemplateBtn: document.getElementById(
-            "open-profile-template"
-          ),
         };
 
-        // estado
         const state = {
           page: 1,
           pageSize: parseInt(el.pageSize.value, 10) || 25,
           total: 0,
           rows: [],
         };
-
-        // helpers
-        function showToastFallback(msg, type = "info") {
-          if (window.showToast) return window.showToast(msg, type, 3000);
-          // fallback minimal
-          alert(msg);
-          return Promise.resolve();
-        }
 
         function escapeHtml(s) {
           if (s == null) return "";
@@ -298,19 +146,12 @@
           };
         }
 
-        // API wrapper: recibe path relativo (ej: '/tabla-clientes') y opciones
         async function apiFetch(path, options = {}) {
           const token = localStorage.getItem("token") || "";
-          const headers = Object.assign(
-            { "Content-Type": "application/json" },
-            options.headers || {}
-          );
+          const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
           if (token) headers.Authorization = `Bearer ${token}`;
 
-          const resp = await fetch(
-            `${API_BASE}${path}`,
-            Object.assign({}, options, { headers })
-          );
+          const resp = await fetch(`${API_BASE}${path}`, Object.assign({}, options, { headers }));
           if (!resp.ok) {
             const contentType = resp.headers.get("Content-Type") || "";
             let errText = `HTTP ${resp.status}`;
@@ -321,9 +162,7 @@
               } else {
                 errText = await resp.text();
               }
-            } catch (e) {
-              // ignore parse errors
-            }
+            } catch (e) {}
             const err = new Error(errText || `HTTP ${resp.status}`);
             err.status = resp.status;
             throw err;
@@ -331,12 +170,10 @@
           return resp.json().catch(() => ({}));
         }
 
-        // render tabla a partir de rows
         function renderTable(rows) {
           state.rows = rows || [];
           if (!rows || rows.length === 0) {
-            el.tbody.innerHTML =
-              '<tr><td colspan="6" class="empty">No se encontraron clientes</td></tr>';
+            el.tbody.innerHTML = '<tr><td colspan="6" class="empty">No se encontraron clientes</td></tr>';
             return;
           }
           el.tbody.innerHTML = "";
@@ -344,39 +181,20 @@
 
           rows.forEach((r) => {
             const tr = document.createElement("tr");
-
-            const nombre = `${r.nombre || ""} ${r.apellidoP || ""} ${
-              r.apellidoM || ""
-            }`.trim();
+            const nombre = `${r.nombre || ""} ${r.apellidoP || ""} ${r.apellidoM || ""}`.trim();
             tr.innerHTML = `
-        <td>${escapeHtml(nombre)}</td>
-        <td>${escapeHtml(r.telefono || "-")}</td>
-        <td>${escapeHtml(r.email || "-")}</td>
-        <td>${
-          r.fecha_registro
-            ? new Date(r.fecha_registro).toLocaleDateString()
-            : "-"
-        }</td>
-        <td style="text-align:center;"><span class="badge badge-info">${
-          r.citas_completadas || 0
-        }</span></td>
-        <td>
-          <div class="action-buttons" role="group" aria-label="Acciones por cliente">
-            <button class="btn btn-primary action-profile" data-id="${
-              r.id_usuario
-            }" type="button">Perfil</button>
-            <button class="btn btn-secondary action-generate" data-id="${
-              r.id_usuario
-            }" type="button">Generar</button>
-            <button class="btn btn-secondary action-edit" data-id="${
-              r.id_usuario
-            }" type="button">Editar</button>
-            <button class="btn btn-danger action-delete" data-id="${
-              r.id_usuario
-            }" type="button">Eliminar</button>
-          </div>
-        </td>
-      `;
+              <td>${escapeHtml(nombre)}</td>
+              <td>${escapeHtml(r.telefono || "-")}</td>
+              <td>${escapeHtml(r.email || "-")}</td>
+              <td>${ r.fecha_registro ? new Date(r.fecha_registro).toLocaleDateString() : "-" }</td>
+              <td style="text-align:center;"><span class="badge">${ r.citas_completadas || 0 }</span></td>
+              <td>
+                <div class="action-buttons" role="group" aria-label="Acciones por cliente">
+                  <button class="btn btn-secondary action-edit" data-id="${r.id_usuario}" type="button">Editar</button>
+                  <button class="btn btn-danger action-delete" data-id="${r.id_usuario}" type="button">Eliminar</button>
+                </div>
+              </td>
+            `;
             fragment.appendChild(tr);
           });
 
@@ -385,197 +203,118 @@
 
         function updateStats() {
           el.statTotal.textContent = state.total || 0;
-          const withCitas = (state.rows || []).filter(
-            (r) => (r.citas_completadas || 0) > 0
-          ).length;
+          const withCitas = (state.rows || []).filter((r) => (r.citas_completadas || 0) > 0).length;
           el.statWithCitas.textContent = withCitas;
-          const avg =
-            state.rows && state.rows.length
-              ? state.rows.reduce((s, r) => s + (r.citas_completadas || 0), 0) /
-                state.rows.length
-              : 0;
-          el.statAvgCitas.textContent = Math.round(avg * 10) / 10;
         }
 
         function updatePagerInfo() {
           const start = (state.page - 1) * state.pageSize + 1;
           const end = Math.min(state.page * state.pageSize, state.total || 0);
-          el.pagerInfo.textContent = state.total
-            ? `Mostrando ${start}-${end} de ${state.total}`
-            : "";
+          el.pagerInfo.textContent = state.total ? `Mostrando ${start}-${end} de ${state.total}` : "";
           el.prev.disabled = state.page <= 1;
           el.next.disabled = state.page * state.pageSize >= (state.total || 0);
         }
 
-        // carga datos con parámetros de búsqueda/paginación
         async function loadClients() {
           const q = (el.search.value || "").trim();
           state.pageSize = parseInt(el.pageSize.value, 10) || 25;
 
           try {
-            el.tbody.innerHTML =
-              '<tr><td colspan="6" class="empty">Cargando...</td></tr>';
-            const params = new URLSearchParams({
-              q,
-              page: String(state.page),
-              pageSize: String(state.pageSize),
-            });
+            el.tbody.innerHTML = '<tr><td colspan="6" class="empty">Cargando...</td></tr>';
+            const params = new URLSearchParams({ q, page: String(state.page), pageSize: String(state.pageSize) });
             const data = await apiFetch(`/tabla-clientes?${params.toString()}`);
             state.total = data.total || 0;
             renderTable(data.rows || []);
             updateStats();
             updatePagerInfo();
           } catch (err) {
-            el.tbody.innerHTML = `<tr><td colspan="6" class="empty">Error: ${escapeHtml(
-              err.message || String(err)
-            )}</td></tr>`;
+            el.tbody.innerHTML = `<tr><td colspan="6" class="empty">Error: ${escapeHtml(err.message || String(err))}</td></tr>`;
             console.error("loadClients error", err);
-            await showToastFallback("Error al cargar clientes", "error");
+            alert("Error al cargar clientes");
           }
         }
 
-        // event handlers (delegation)
-        function onTableClick(e) {
+        // Delegación de botones
+        async function onTableClick(e) {
           const btn = e.target.closest("button");
           if (!btn) return;
           const id = btn.dataset.id;
           if (!id) return;
 
-          if (btn.matches(".action-profile")) {
-            openProfile(id);
-          } else if (btn.matches(".action-generate")) {
-            window.open(`/perfil_template/${id}`, "_blank");
-          } else if (btn.matches(".action-edit")) {
-            openEdit(id);
+          if (btn.matches(".action-edit")) {
+            await openEdit(id);
           } else if (btn.matches(".action-delete")) {
-            confirmDelete(id);
+            await confirmDelete(id);
           }
         }
 
-        // modal: profile
-        async function openProfile(id) {
-          try {
-            el.profileBody.innerHTML = "<p>Cargando...</p>";
-            el.profileModal.hidden = false;
-            el.profileModal.classList.add("open");
-
-            const profile = await apiFetch(`/auth/perfil/${id}`);
-            // render limpio y accesible
-            const fullName = `${profile.nombre || ""} ${
-              profile.apellidoP || ""
-            } ${profile.apellidoM || ""}`.trim();
-            el.profileBody.innerHTML = `
-        <div class="detail-row"><div class="detail-label">Nombre</div><div class="detail-value">${escapeHtml(
-          fullName
-        )}</div></div>
-        <div class="detail-row"><div class="detail-label">Email</div><div class="detail-value">${escapeHtml(
-          profile.email || "-"
-        )}</div></div>
-        <div class="detail-row"><div class="detail-label">Teléfono</div><div class="detail-value">${escapeHtml(
-          profile.telefono || "-"
-        )}</div></div>
-        <div class="detail-row"><div class="detail-label">Edad</div><div class="detail-value">${
-          profile.edad || "-"
-        }</div></div>
-        <div style="margin-top:12px;">
-          <button id="btn-open-profile-template" class="btn btn-secondary">Generar plantilla</button>
-        </div>
-      `;
-            const btnTemplate = document.getElementById(
-              "btn-open-profile-template"
-            );
-            if (btnTemplate)
-              btnTemplate.addEventListener("click", () =>
-                window.open(`/perfil_template/${id}`, "_blank")
-              );
-          } catch (err) {
-            el.profileBody.innerHTML = `<p class="empty">No se pudo cargar el perfil: ${escapeHtml(
-              err.message || String(err)
-            )}</p>`;
-            console.error("openProfile error", err);
-          }
-        }
-
-        function closeProfile() {
-          el.profileModal.hidden = true;
-          el.profileModal.classList.remove("open");
-          el.profileBody.innerHTML = "";
-        }
-
-        // edit/create (opens a native prompt for simplicity - you can replace with a proper modal form)
         async function openEdit(id) {
           try {
+            // obtener los datos actuales
             const profile = await apiFetch(`/auth/perfil/${id}`);
+            // formulario mínimo (prompt)
             const nombre = prompt("Nombre", profile.nombre || "");
-            if (nombre == null) return; // cancelled
+            if (nombre == null) return;
+            const apellidoP = prompt("Apellido Paterno", profile.apellidoP || "");
+            if (apellidoP == null) return;
+            const apellidoM = prompt("Apellido Materno", profile.apellidoM || "");
+            if (apellidoM == null) return;
             const telefono = prompt("Teléfono", profile.telefono || "");
             if (telefono == null) return;
+            const email = prompt("Email", profile.email || "");
+            if (email == null) return;
+
             const payload = {
               nombre: String(nombre).trim(),
+              apellidoP: String(apellidoP).trim(),
+              apellidoM: String(apellidoM).trim(),
               telefono: String(telefono).trim(),
+              email: String(email).trim(),
             };
+
             await apiFetch(`/usuarios/${id}`, {
               method: "PUT",
               body: JSON.stringify(payload),
             });
-            await showToastFallback("Cliente actualizado", "success");
+
+            alert("Cliente actualizado");
             await loadClients();
           } catch (err) {
             console.error("openEdit error", err);
-            await showToastFallback("Error al actualizar cliente", "error");
+            alert("Error al actualizar cliente: " + (err.message || ""));
           }
         }
+
+        async function confirmDelete(id) {
+          const ok = confirm("¿Seguro que deseas eliminar este cliente?");
+          if (!ok) return;
+
+          try {
+            await apiFetch(`/usuarios/${id}`, { method: "DELETE" });
+            alert("Cliente eliminado");
+            await loadClients();
+          } catch (err) {
+            console.error("delete error", err);
+            alert("Error al eliminar cliente: " + (err.message || ""));
+          }
+        }
+
+        // eventos
         function attachEvents() {
-          document
-            .getElementById("clients-table")
-            .addEventListener("click", onTableClick);
-          el.prev.addEventListener("click", () => {
-            if (state.page > 1) {
-              state.page--;
-              loadClients();
-            }
-          });
-          el.next.addEventListener("click", () => {
-            state.page++;
-            loadClients();
-          });
+          el.search.addEventListener("input", debounce(() => { state.page = 1; loadClients(); }, 350));
+          el.pageSize.addEventListener("change", () => { state.page = 1; loadClients(); });
+          el.prev.addEventListener("click", () => { if (state.page > 1) { state.page--; loadClients(); }});
+          el.next.addEventListener("click", () => { state.page++; loadClients(); });
           el.btnRefresh.addEventListener("click", () => loadClients());
-          el.btnCreate.addEventListener("click", () => createClient());
-          el.closeProfile.addEventListener("click", () => closeProfile());
-          if (el.closeProfile2)
-            el.closeProfile2.addEventListener("click", () => closeProfile());
-          el.openProfileTemplateBtn &&
-            el.openProfileTemplateBtn.addEventListener("click", () => {
-              // if modal has profile loaded, get an id from its content (or you can set a state.currentProfileId)
-            });
-
-          el.pageSize.addEventListener("change", () => {
-            state.page = 1;
-            loadClients();
-          });
-
-          // debounce search
-          el.search.addEventListener(
-            "input",
-            debounce(() => {
-              state.page = 1;
-              loadClients();
-            }, 350)
-          );
-
-          // close modal on esc
-          document.addEventListener("keydown", (ev) => {
-            if (ev.key === "Escape" && !el.profileModal.hidden) closeProfile();
-          });
+          document.getElementById("clients-table").addEventListener("click", onTableClick);
         }
 
         // bootstrap
-        async function init() {
+        function init() {
           attachEvents();
-          await loadClients();
+          loadClients();
         }
 
-        // start when DOM ready
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", init);
         } else {
