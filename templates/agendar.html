@@ -204,7 +204,7 @@
         </ul>
       </nav>
     </footer>
-    
+
     <div id="app-notify-root">
       <div id="app-toast-container" class="toast-container"></div>
       <div id="app-modal-container"></div>
@@ -215,7 +215,7 @@
         const toastContainer = document.getElementById("app-toast-container");
         const modalContainer = document.getElementById("app-modal-container");
 
-        window.showToast = function (text = "", type = "info", timeout = 3500) {
+        window.await showToast = function (text = "", type = "info", timeout = 3500) {
           return new Promise((resolve) => {
             if (!toastContainer) {
               console.warn("Toast container missing:", text);
@@ -407,13 +407,13 @@
         const rol = getRol();
 
         if (!token) {
-          alert("Debes iniciar sesión");
+          await showToast("Debes iniciar sesión","info",3000);
           window.location.href = "/";
           return;
         }
 
         if (rol !== "cliente") {
-          alert("Esta página es solo para clientes");
+          await showToast("Esta página es solo para clientes","error",3000);
           window.location.href = "/home";
           return;
         }
@@ -748,7 +748,7 @@
       // ========== ENVIAR CITA ==========
       async function bookAppointment() {
         if (!selectedDate || !selectedTime || !selectedService) {
-          alert("Por favor, completa todos los campos obligatorios");
+          await showToast("Por favor, completa todos los campos obligatorios","info",3000);
           return;
         }
 
@@ -781,14 +781,14 @@
           const data = await resp.json();
 
           if (!resp.ok) {
-            alert(data.error || "Error al agendar cita");
+            await showToast(data.error || "Error al agendar cita","error",3000);
             if (data.error === "Este horario ya está ocupado") {
               updateTimeSlots(selectedDate);
             }
             return;
           }
 
-          alert("¡Cita agendada exitosamente!");
+          await showToast("¡Cita agendada exitosamente!","success",3000);
 
           selectedTime = null;
           document
@@ -806,7 +806,7 @@
           validateForm();
         } catch (err) {
           console.error("Error al enviar cita:", err);
-          alert("Error de conexión");
+          await showToast("Error de conexión","error",3000);
         }
       }
 
