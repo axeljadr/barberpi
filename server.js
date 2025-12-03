@@ -2334,222 +2334,118 @@ app.get("/api/citas/puede-agendar", verificarToken, async (req, res) => {
   }
 });
 
-// GET lista de clientes (solo admin)
-app.get("/api/clientes", verificarToken, async (req, res) => {
-  if (req.usuario.rol !== "admin") {
-    return res
-      .status(403)
-      .json({ error: "Solo administradores pueden ver clientes" });
-  }
-
+app.get("/api/tabla-clientes", verificarToken, async (req, res) => {
   try {
+    const rol = req.usuario && req.usuario.rol;
+    if (!rol || (rol !== "admin" && rol !== "barbero")) {
+      return res.status(403).json({ error: "Acceso denegado" });
+    }
+
+    const q = (req.query.q || "").trim();
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const pageSize = Math.max(parseInt(req.query.pageSize || "50", 10), 1);
+    const offset = (page - 1) * pageSize;
+
     const pool = await conectarDB();
 
-    const result = await pool.request().query(`
+    const totalQuery = `
+      SELECT COUNT(*) AS total
+      FROM usuarios u
+      WHERE u.rol = 'cliente'
+      ${q ? `AND (
+           (u.nombre + ' ' + ISNULL(u.apellidoP,'') + ' ' + ISNULL(u.apellidoM,'')) LIKE @like
+           OR u.email LIKE @like
+           OR u.telefono LIKE @like
+      )` : ""}
+    `;
+
+    const dataQuery = `
       SELECT 
         u.id_usuario,
         u.nombre,
-        u.email,
+        u.apellidoP,
+        u.apellidoM,
         u.telefono,
-        u.creado_en,
-        COUNT(c.id_cita) AS total_citas,
-        MAX(c.fecha) AS ultima_cita
-      FROM Usuarios u
-      LEFT JOIN Citas c ON u.id_usuario = c.id_usuario
+        u.email,
+        u.fecha_registro,
+        ISNULL(c.citas_completadas, 0) AS citas_completadas
+      FROM usuarios u
+      LEFT JOIN (
+        SELECT id_usuario, COUNT(*) AS citas_completadas
+        FROM Citas
+        WHERE estado = 'completada'
+        GROUP BY id_usuario
+      ) c ON c.id_usuario = u.id_usuario
       WHERE u.rol = 'cliente'
-      GROUP BY u.id_usuario, u.nombre, u.email, u.telefono, u.creado_en
-      ORDER BY u.creado_en DESC
-    `);
+      ${q ? `AND (
+           (u.nombre + ' ' + ISNULL(u.apellidoP,'') + ' ' + ISNULL(u.apellidoM,'')) LIKE @like
+           OR u.email LIKE @like
+           OR u.telefono LIKE @like
+      )` : ""}
+      ORDER BY u.fecha_registro DESC
+      OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY
+    `;
 
-    res.json(result.recordset);
-  } catch (error) {
-    console.error("Error al obtener clientes:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
+    const totalRequest = pool.request();
+    if (q) totalRequest.input("like", mssql.NVarChar, `%${q}%`);
+    const totalResult = await totalRequest.query(totalQuery);
+    const total = totalResult.recordset[0] ? totalResult.recordset[0].total : 0;
 
-// GET detalle de un cliente específico (solo admin)
-app.get("/api/clientes/:id", verificarToken, async (req, res) => {
-  if (req.usuario.rol !== "admin") {
-    return res
-      .status(403)
-      .json({ error: "Solo administradores pueden ver clientes" });
-  }
+    const dataRequest = pool.request();
+    if (q) dataRequest.input("like", mssql.NVarChar, `%${q}%`);
+    dataRequest.input("offset", mssql.Int, offset);
+    dataRequest.input("pageSize", mssql.Int, pageSize);
 
-  const id_cliente = parseInt(req.params.id, 10);
-  if (isNaN(id_cliente)) {
-    return res.status(400).json({ error: "ID de cliente inválido" });
-  }
-
-  try {
-    const pool = await conectarDB();
-
-    // Información del cliente
-    const clienteResult = await pool
-      .request()
-      .input("id_cliente", mssql.Int, id_cliente).query(`
-        SELECT 
-          u.id_usuario,
-          u.nombre,
-          u.email,
-          u.telefono,
-          u.creado_en
-        FROM Usuarios u
-        WHERE u.id_usuario = @id_cliente AND u.rol = 'cliente'
-      `);
-
-    if (!clienteResult.recordset.length) {
-      return res.status(404).json({ error: "Cliente no encontrado" });
-    }
-
-    // Historial de citas del cliente
-    const citasResult = await pool
-      .request()
-      .input("id_cliente", mssql.Int, id_cliente).query(`
-        SELECT 
-          c.id_cita,
-          c.fecha,
-          c.hora,
-          c.estado,
-          c.precio_estimado,
-          s.nombre AS servicio_nombre,
-          b.nombre AS barbero_nombre
-        FROM Citas c
-        JOIN Servicios s ON c.servicio = s.id_servicio
-        JOIN Usuarios b ON c.id_barbero = b.id_usuario
-        WHERE c.id_usuario = @id_cliente
-        ORDER BY c.fecha DESC, c.hora DESC
-      `);
+    const dataResult = await dataRequest.query(dataQuery);
 
     res.json({
-      cliente: clienteResult.recordset[0],
-      citas: citasResult.recordset,
+      total,
+      page,
+      pageSize,
+      rows: dataResult.recordset,
     });
   } catch (error) {
-    console.error("Error al obtener detalle del cliente:", error);
+    console.error("Error en GET /api/tabla-clientes:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-
-// DELETE eliminar cliente (solo admin)
-app.delete("/api/clientes/:id", verificarToken, async (req, res) => {
-  if (req.usuario.rol !== "admin") {
-    return res
-      .status(403)
-      .json({ error: "Solo administradores pueden eliminar clientes" });
-  }
-
-  const id_cliente = parseInt(req.params.id, 10);
-  if (isNaN(id_cliente)) {
-    return res.status(400).json({ error: "ID de cliente inválido" });
-  }
-
+app.get("/api/auth/perfil/:id_usuario", verificarToken, async (req, res) => {
   try {
-    const pool = await conectarDB();
-
-    // Primero eliminar las citas del cliente
-    await pool
-      .request()
-      .input("id_cliente", mssql.Int, id_cliente)
-      .query(`DELETE FROM Citas WHERE id_usuario = @id_cliente`);
-
-    // Luego eliminar el cliente
-    const result = await pool
-      .request()
-      .input("id_cliente", mssql.Int, id_cliente).query(`
-        DELETE FROM Usuarios 
-        WHERE id_usuario = @id_cliente AND rol = 'cliente';
-        
-        SELECT @@ROWCOUNT AS affected;
-      `);
-
-    if (result.recordset[0].affected === 0) {
-      return res.status(404).json({ error: "Cliente no encontrado" });
+    if (req.usuario.rol !== "admin") {
+      return res.status(403).json({ error: "Acceso denegado" });
     }
 
-    res.json({ mensaje: "Cliente eliminado correctamente" });
-  } catch (error) {
-    console.error("Error al eliminar cliente:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-// GET /api/usuarios/:id  -> ver perfil (admin o el propio usuario)
-app.get("/api/usuarios/:id", verificarToken, async (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
+    const id_usuario = parseInt(req.params.id_usuario);
+    if (isNaN(id_usuario)) {
+      return res.status(400).json({ error: "ID de usuario inválido" });
+    }
 
-  // permiso: admin o usuario mismo
-  if (req.usuario.rol !== "admin" && req.usuario.id !== id) {
-    return res.status(403).json({ error: "No autorizado" });
-  }
-
-  try {
     const pool = await conectarDB();
-    const result = await pool.request().input("id", mssql.Int, id).query(`
-        SELECT id_usuario, nombre, email, telefono, rol, creado_en
-        FROM Usuarios
-        WHERE id_usuario = @id
+    const result = await pool
+      .request()
+      .input("id_usuario", mssql.Int, id_usuario)
+      .query(`
+        SELECT 
+          id_usuario,
+          nombre,
+          apellidoP,
+          apellidoM,
+          edad,
+          email,
+          telefono,
+          foto_perfil,
+          rol
+        FROM usuarios
+        WHERE id_usuario = @id_usuario
       `);
 
-    if (!result.recordset.length) {
+    if (result.recordset.length === 0) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
     res.json(result.recordset[0]);
-  } catch (err) {
-    console.error("Error GET /api/usuarios/:id", err);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
-// PATCH /api/usuarios/:id -> actualizar perfil (admin o propio usuario)
-app.patch("/api/usuarios/:id", verificarToken, async (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
-
-  // permiso: admin o usuario mismo
-  if (req.usuario.rol !== "admin" && req.usuario.id !== id) {
-    return res.status(403).json({ error: "No autorizado" });
-  }
-
-  const { nombre, email, telefono } = req.body;
-
-  // Validaciones básicas
-  if (!nombre || !email) {
-    return res.status(400).json({ error: "nombre y email son obligatorios" });
-  }
-
-  try {
-    const pool = await conectarDB();
-    const result = await pool
-      .request()
-      .input("id", mssql.Int, id)
-      .input("nombre", mssql.NVarChar(200), nombre)
-      .input("email", mssql.VarChar(200), email)
-      .input("telefono", mssql.VarChar(50), telefono || null).query(`
-        UPDATE Usuarios
-        SET nombre = @nombre,
-            email = @email,
-            telefono = @telefono
-        WHERE id_usuario = @id;
-
-        SELECT id_usuario, nombre, email, telefono, rol, creado_en
-        FROM Usuarios
-        WHERE id_usuario = @id;
-      `);
-
-    const updated = result.recordset[0];
-    if (!updated) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
-    }
-
-    res.json({ mensaje: "Perfil actualizado", usuario: updated });
-  } catch (err) {
-    console.error("Error PATCH /api/usuarios/:id", err);
-    // Manejar posible duplicado de email (si aplica)
-    if (err && err.number === 2627) {
-      return res.status(400).json({ error: "Email ya registrado" });
-    }
+  } catch (error) {
+    console.error("Error en GET /perfil/:id_usuario:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
