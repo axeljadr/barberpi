@@ -39,7 +39,11 @@
 
 .app-toast .msg {
   flex: 1;
-  line-height: 1.4;
+  line-height: 1.5;
+  text-align: justify;
+  word-wrap: break-word;
+  hyphens: auto;
+  white-space: normal;
 }
 
 .app-toast .close-btn {
@@ -223,3 +227,4 @@
     font-size: 1.5rem;
   }
 }
+
