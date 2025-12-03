@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Barber Studio - Perfil</title>
     <link rel="stylesheet" href="/static/perfil.css" />
-        <link rel="stylesheet" href="/static/alerts.css" />
-
+    <link rel="stylesheet" href="/static/alerts.css" />
   </head>
   <body>
     <header class="header">
@@ -228,164 +227,162 @@
         </ul>
       </nav>
     </footer>
-    
-<script>
-      const API_BASE =
-        window.location.hostname.includes("localhost") ||
-        window.location.hostname === "127.0.0.1"
-          ? "http://localhost:4000"
-          : window.location.origin;
 
-      const API_AUTH = `${API_BASE}/api/auth`;
+    <script>
+          const API_BASE =
+            window.location.hostname.includes("localhost") ||
+            window.location.hostname === "127.0.0.1"
+              ? "http://localhost:4000"
+              : window.location.origin;
 
-      function getToken() {
-        return localStorage.getItem("token");
-      }
+          const API_AUTH = `${API_BASE}/api/auth`;
 
-      function getRol() {
-        return localStorage.getItem("rol");
-      }
+          function getToken() {
+            return localStorage.getItem("token");
+          }
 
-      let currentUser = null;
-      let currentRol = null;
-      let selectedPhotoFile = null;
+          function getRol() {
+            return localStorage.getItem("rol");
+          }
 
-      const nav_by_rol = {
-        cliente: [
-          { href: "/perfil", label: "Mi Información" },
-          { href: "/home", label: "Inicio" },
-          { href: "/agendar", label: "Agendar Cita" },
-          { href: "/notificacion", label: "Notificaciones" },
-          { href: "/", label: "Cerrar Sesión" },
-        ],
-        barbero: [
-          { href: "/perfil", label: "Mi Información" },
-          { href: "/homebarber", label: "Inicio" },
-          { href: "/barber_agenda", label: "Agenda" },
-          { href: "/notibarbero", label: "Notificaciones" },
-          { href: "/", label: "Cerrar Sesión" },
-        ],
-        admin: [
-          { href: "/perfil", label: "Mi Información" },
-          { href: "/homebarber", label: "Inicio" },
-          { href: "/barber_agenda", label: "Agenda" },
-          { href: "/notibarbero", label: "Notificaciones" },
-          { href: "/", label: "Cerrar Sesión" },
-        ],
-      };
-      (function notifyHelpers() {
-        const toastContainer = document.getElementById("app-toast-container");
-        const modalContainer = document.getElementById("app-modal-container");
+          let currentUser = null;
+          let currentRol = null;
+          let selectedPhotoFile = null;
 
-        window.showToast = function (text = "", type = "info", timeout = 3500) {
-          return new Promise((resolve) => {
-            if (!toastContainer) {
-              console.warn("Toast container missing:", text);
-              return resolve();
-            }
-            const wrap = document.createElement("div");
-            wrap.className = `app-toast ${type}`;
-            wrap.innerHTML = `<div class="msg">${text}</div><button class="close-btn" aria-label="close">&times;</button>`;
-            const closeBtn = wrap.querySelector(".close-btn");
-            let removed = false;
-            const cleanup = () => {
-              if (removed) return;
-              removed = true;
-              wrap.style.opacity = "0";
-              setTimeout(() => {
-                try {
-                  toastContainer.removeChild(wrap);
-                } catch (e) {}
-                resolve();
-              }, 180);
+          const nav_by_rol = {
+            cliente: [
+              { href: "/perfil", label: "Mi Información" },
+              { href: "/home", label: "Inicio" },
+              { href: "/agendar", label: "Agendar Cita" },
+              { href: "/notificacion", label: "Notificaciones" },
+              { href: "/", label: "Cerrar Sesión" },
+            ],
+            barbero: [
+              { href: "/perfil", label: "Mi Información" },
+              { href: "/homebarber", label: "Inicio" },
+              { href: "/barber_agenda", label: "Agenda" },
+              { href: "/notibarbero", label: "Notificaciones" },
+              { href: "/", label: "Cerrar Sesión" },
+            ],
+            admin: [
+              { href: "/perfil", label: "Mi Información" },
+              { href: "/homebarber", label: "Inicio" },
+              { href: "/barber_agenda", label: "Agenda" },
+              { href: "/notibarbero", label: "Notificaciones" },
+              { href: "/", label: "Cerrar Sesión" },
+            ],
+          };
+          (function notifyHelpers() {
+            const toastContainer = document.getElementById("app-toast-container");
+            const modalContainer = document.getElementById("app-modal-container");
+
+            window.showToast = function (text = "", type = "info", timeout = 3500) {
+              return new Promise((resolve) => {
+                if (!toastContainer) {
+                  console.warn("Toast container missing:", text);
+                  return resolve();
+                }
+                const wrap = document.createElement("div");
+                wrap.className = `app-toast ${type}`;
+                wrap.innerHTML = `<div class="msg">${text}</div><button class="close-btn" aria-label="close">&times;</button>`;
+                const closeBtn = wrap.querySelector(".close-btn");
+                let removed = false;
+                const cleanup = () => {
+                  if (removed) return;
+                  removed = true;
+                  wrap.style.opacity = "0";
+                  setTimeout(() => {
+                    try {
+                      toastContainer.removeChild(wrap);
+                    } catch (e) {}
+                    resolve();
+                  }, 180);
+                };
+                closeBtn.addEventListener("click", cleanup);
+                toastContainer.appendChild(wrap);
+                setTimeout(cleanup, timeout || 3500);
+              });
             };
-            closeBtn.addEventListener("click", cleanup);
-            toastContainer.appendChild(wrap);
-            setTimeout(cleanup, timeout || 3500);
-          });
-        };
 
-        window.showConfirm = function (title = "Confirmar", message = "") {
-          return new Promise((resolve) => {
-            if (!modalContainer) {
-              console.warn("Modal container missing:", title, message);
-              return resolve(false);
-            }
-            const backdrop = document.createElement("div");
-            backdrop.className = "app-modal-backdrop";
-            backdrop.innerHTML = `
-        <div class="app-modal" role="dialog" aria-modal="true">
-          <h3>${title}</h3>
-          <p>${message}</p>
-          <div class="row">
-            <button class="app-btn ghost" id="app-cancel-btn">Cancelar</button>
-            <button class="app-btn primary" id="app-ok-btn">Aceptar</button>
-          </div>
-        </div>
-      `;
-            modalContainer.appendChild(backdrop);
-            const ok = backdrop.querySelector("#app-ok-btn");
-            const cancel = backdrop.querySelector("#app-cancel-btn");
-            const cleanup = (value) => {
-              try {
-                modalContainer.removeChild(backdrop);
-              } catch (e) {}
-              resolve(Boolean(value));
+            window.showConfirm = function (title = "Confirmar", message = "") {
+              return new Promise((resolve) => {
+                if (!modalContainer) {
+                  console.warn("Modal container missing:", title, message);
+                  return resolve(false);
+                }
+                const backdrop = document.createElement("div");
+                backdrop.className = "app-modal-backdrop";
+                backdrop.innerHTML = `
+            <div class="app-modal" role="dialog" aria-modal="true">
+              <h3>${title}</h3>
+              <p>${message}</p>
+              <div class="row">
+                <button class="app-btn ghost" id="app-cancel-btn">Cancelar</button>
+                <button class="app-btn primary" id="app-ok-btn">Aceptar</button>
+              </div>
+            </div>
+          `;
+                modalContainer.appendChild(backdrop);
+                const ok = backdrop.querySelector("#app-ok-btn");
+                const cancel = backdrop.querySelector("#app-cancel-btn");
+                const cleanup = (value) => {
+                  try {
+                    modalContainer.removeChild(backdrop);
+                  } catch (e) {}
+                  resolve(Boolean(value));
+                };
+                cancel.addEventListener("click", () => cleanup(false));
+                ok.addEventListener("click", () => cleanup(true));
+                backdrop.addEventListener("click", (ev) => {
+                  if (ev.target === backdrop) cleanup(false);
+                });
+              });
             };
-            cancel.addEventListener("click", () => cleanup(false));
-            ok.addEventListener("click", () => cleanup(true));
-            backdrop.addEventListener("click", (ev) => {
-              if (ev.target === backdrop) cleanup(false);
+          })();
+
+          function renderNavByRole(role) {
+            const nav = document.getElementById("main-nav");
+            if (!nav) return;
+
+            const items = nav_by_rol[role] || nav_by_rol["cliente"];
+
+            nav.innerHTML = "";
+
+            items.forEach((item) => {
+              const a = document.createElement("a");
+              a.className = "navigation-pill";
+              a.href = item.href || "#";
+              const span = document.createElement("span");
+              span.className = "title";
+              span.textContent = item.label;
+              a.appendChild(span);
+              nav.appendChild(a);
             });
-          });
-        };
-      })();
-
-      function renderNavByRole(role) {
-        const nav = document.getElementById("main-nav");
-        if (!nav) return;
-
-        const items = nav_by_rol[role] || nav_by_rol["cliente"];
-
-        nav.innerHTML = "";
-
-        items.forEach((item) => {
-          const a = document.createElement("a");
-          a.className = "navigation-pill";
-          a.href = item.href || "#";
-          const span = document.createElement("span");
-          span.className = "title";
-          span.textContent = item.label;
-          a.appendChild(span);
-          nav.appendChild(a);
-        });
-      }
+          }
 
 
-        document.addEventListener("DOMContentLoaded", async function () {
+      document.addEventListener("DOMContentLoaded", async function () {
         const token = getToken();
         const rol = getRol();
         currentRol = rol;
 
         if (!token) {
           alert("Debes iniciar sesión");
-          window.location.href = "/barberpi/templates/login.html";
+          window.location.href = "/";
           return;
         }
 
         try {
           const resp = await fetch(`${API_AUTH}/perfil`, {
             method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           });
 
           if (resp.status === 401) {
             alert("Sesión expirada. Vuelve a iniciar sesión.");
             localStorage.removeItem("token");
             localStorage.removeItem("rol");
-            window.location.href = "/barberpi/templates/login.html";
+            window.location.href = "/";
             return;
           }
 
@@ -396,10 +393,11 @@
           }
 
           currentUser = await resp.json();
-          renderNavByRole(currentRol);
+          renderNavByRole(currentRol); // si ya tienes esta función
           loadUserDataFromBackend(currentUser);
-          configureRoleFieldByPermission();
+          configureRoleFieldByPermission(); // si ya tienes
 
+          // listener input file
           document
             .getElementById("photo-file-input")
             .addEventListener("change", function (e) {
@@ -407,11 +405,9 @@
                 selectedPhotoFile = e.target.files[0];
                 document.getElementById("file-name").textContent =
                   selectedPhotoFile.name;
-
                 const reader = new FileReader();
                 reader.onload = function (e2) {
-                  document.getElementById("photo-preview").src =
-                    e2.target.result;
+                  document.getElementById("photo-preview").src = e2.target.result;
                 };
                 reader.readAsDataURL(selectedPhotoFile);
               }
@@ -428,8 +424,9 @@
           alert("Error de conexión al cargar tu perfil");
         }
       });
-        function loadUserDataFromBackend(user) {
-        document.getElementById("id_usuario").value = user.id_usuario;
+
+      function loadUserDataFromBackend(user) {
+        document.getElementById("id_usuario").value = user.id_usuario || "";
         document.getElementById("nombre").value = user.nombre || "";
         document.getElementById("apellidoP").value = user.apellidoP || "";
         document.getElementById("apellidoM").value = user.apellidoM || "";
@@ -441,96 +438,96 @@
         updateDisplay(user);
       }
 
+      function updateDisplay(user) {
+            const nombreCompleto = `${user.nombre || ""} ${user.apellidoP || ""} ${
+              user.apellidoM || ""
+            }`.trim();
 
-  function updateDisplay(user) {
-        const nombreCompleto = `${user.nombre || ""} ${user.apellidoP || ""} ${
-          user.apellidoM || ""
-        }`.trim();
+            document.getElementById("display-name").textContent =
+              nombreCompleto || "Ingresa tus datos";
+            document.getElementById("display-role").textContent =
+              (user.rol || "cliente").charAt(0).toUpperCase() +
+              (user.rol || "cliente").slice(1);
+            document.getElementById("display-id").textContent =
+              user.id_usuario || "-";
 
-        document.getElementById("display-name").textContent =
-          nombreCompleto || "Ingresa tus datos";
-        document.getElementById("display-role").textContent =
-          (user.rol || "cliente").charAt(0).toUpperCase() +
-          (user.rol || "cliente").slice(1);
-        document.getElementById("display-id").textContent =
-          user.id_usuario || "-";
+            const fotoUrl =
+              user.foto_perfil || "/images/default-avatar.jpg";
+            const fotoCompleta =  fotoUrl;
 
-        const fotoUrl =
-          user.foto_perfil || "/images/default-avatar.jpg";
-        const fotoCompleta =  fotoUrl;
+            document.getElementById("profile-picture").src = fotoCompleta;
+            document.getElementById("photo-preview").src = fotoCompleta;
+          }
 
-        document.getElementById("profile-picture").src = fotoCompleta;
-        document.getElementById("photo-preview").src = fotoCompleta;
-      }
+          function configureRoleFieldByPermission() {
+            const rolSelect = document.getElementById("rol");
 
-      function configureRoleFieldByPermission() {
-        const rolSelect = document.getElementById("rol");
+            if (!rolSelect) return;
 
-        if (!rolSelect) return;
+            if (currentRol === "admin") {
+              rolSelect.disabled = false;
+            } else {
+              rolSelect.disabled = true;
+            }
+          }
 
-        if (currentRol === "admin") {
-          rolSelect.disabled = false;
-        } else {
-          rolSelect.disabled = true;
-        }
-      }
+          function openPhotoModal() {
+            document.getElementById("photo-modal").style.display = "flex";
+            selectedPhotoFile = null;
+            document.getElementById("file-name").textContent =
+              "Ningún archivo seleccionado";
+            document.getElementById("photo-file-input").value = "";
 
-      function openPhotoModal() {
-        document.getElementById("photo-modal").style.display = "flex";
+            const fotoActual =
+              currentUser.foto_perfil || "/images/default-avatar.jpg";
+            const fotoCompleta = fotoActual;
+            document.getElementById("photo-preview").src = fotoCompleta;
+          }
+
+      function closePhotoModal() {
+        document.getElementById("photo-modal").style.display = "none";
         selectedPhotoFile = null;
         document.getElementById("file-name").textContent =
           "Ningún archivo seleccionado";
         document.getElementById("photo-file-input").value = "";
-
-        const fotoActual =
-          currentUser.foto_perfil || "/images/default-avatar.jpg";
-        const fotoCompleta = fotoActual;
-        document.getElementById("photo-preview").src = fotoCompleta;
-
-  function closePhotoModal() {
-    document.getElementById("photo-modal").style.display = "none";
-    selectedPhotoFile = null;
-    document.getElementById("file-name").textContent =
-      "Ningún archivo seleccionado";
-    document.getElementById("photo-file-input").value = "";
-  }
-
-  async function uploadPhoto() {
-    if (!selectedPhotoFile) {
-      alert("Por favor, selecciona una imagen primero");
-      return;
-    }
-    const token = getToken();
-    const formData = new FormData();
-    formData.append("foto", selectedPhotoFile);
-
-    try {
-      const resp = await fetch(`${API_AUTH}/perfil/foto`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      const data = await resp.json().catch(() => ({}));
-
-      if (!resp.ok) {
-        alert(data.error || "Error al subir la foto");
-        return;
       }
 
-      // el backend devuelve foto_perfil absoluta
-      currentUser.foto_perfil = data.foto_perfil;
-      updateDisplay(currentUser);
-      closePhotoModal();
-      alert("Foto de perfil actualizada correctamente");
-    } catch (err) {
-      console.error("Error al subir foto:", err);
-      alert("Error de conexión al subir la foto");
-    }
-  }
+      async function uploadPhoto() {
+        if (!selectedPhotoFile) {
+          alert("Por favor, selecciona una imagen primero");
+          return;
+        }
+        const token = getToken();
+        const formData = new FormData();
+        formData.append("foto", selectedPhotoFile);
 
-  async function saveUserDataToBackend() {
-  }
-</script>
+        try {
+          const resp = await fetch(`${API_AUTH}/perfil/foto`, {
+            method: "PUT",
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+          });
+
+          const data = await resp.json().catch(() => ({}));
+
+          if (!resp.ok) {
+            alert(data.error || "Error al subir la foto");
+            return;
+          }
+
+          // el backend devuelve foto_perfil absoluta
+          currentUser.foto_perfil = data.foto_perfil;
+          updateDisplay(currentUser);
+          closePhotoModal();
+          alert("Foto de perfil actualizada correctamente");
+        } catch (err) {
+          console.error("Error al subir foto:", err);
+          alert("Error de conexión al subir la foto");
+        }
+      }
+
+      async function saveUserDataToBackend() {
+      }
+    </script>
   </body>
 </html>
