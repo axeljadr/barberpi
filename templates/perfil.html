@@ -362,82 +362,85 @@
       }
 
 
-  document.addEventListener("DOMContentLoaded", async function () {
-    const token = getToken();
-    const rol = getRol();
-    currentRol = rol;
+        document.addEventListener("DOMContentLoaded", async function () {
+        const token = getToken();
+        const rol = getRol();
+        currentRol = rol;
 
-    if (!token) {
-      alert("Debes iniciar sesión");
-      window.location.href = "/";
-      return;
-    }
+        if (!token) {
+          alert("Debes iniciar sesión");
+          window.location.href = "/barberpi/templates/login.html";
+          return;
+        }
 
-    try {
-      const resp = await fetch(`${API_AUTH}/perfil`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        try {
+          const resp = await fetch(`${API_AUTH}/perfil`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-      if (resp.status === 401) {
-        alert("Sesión expirada. Vuelve a iniciar sesión.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("rol");
-        window.location.href = "/";
-        return;
-      }
-
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        alert(data.error || "No se pudo cargar el perfil");
-        return;
-      }
-
-      currentUser = await resp.json();
-      renderNavByRole(currentRol); // si ya tienes esta función
-      loadUserDataFromBackend(currentUser);
-      configureRoleFieldByPermission(); // si ya tienes
-
-      // listener input file
-      document
-        .getElementById("photo-file-input")
-        .addEventListener("change", function (e) {
-          if (e.target.files && e.target.files[0]) {
-            selectedPhotoFile = e.target.files[0];
-            document.getElementById("file-name").textContent =
-              selectedPhotoFile.name;
-            const reader = new FileReader();
-            reader.onload = function (e2) {
-              document.getElementById("photo-preview").src = e2.target.result;
-            };
-            reader.readAsDataURL(selectedPhotoFile);
+          if (resp.status === 401) {
+            alert("Sesión expirada. Vuelve a iniciar sesión.");
+            localStorage.removeItem("token");
+            localStorage.removeItem("rol");
+            window.location.href = "/barberpi/templates/login.html";
+            return;
           }
-        });
 
-      document
-        .getElementById("profile-form")
-        .addEventListener("submit", function (e) {
-          e.preventDefault();
-          saveUserDataToBackend();
-        });
-    } catch (err) {
-      console.error("Error al cargar perfil:", err);
-      alert("Error de conexión al cargar tu perfil");
-    }
-  });
+          if (!resp.ok) {
+            const data = await resp.json().catch(() => ({}));
+            alert(data.error || "No se pudo cargar el perfil");
+            return;
+          }
 
-  function loadUserDataFromBackend(user) {
-    document.getElementById("id_usuario").value = user.id_usuario || "";
-    document.getElementById("nombre").value = user.nombre || "";
-    document.getElementById("apellidoP").value = user.apellidoP || "";
-    document.getElementById("apellidoM").value = user.apellidoM || "";
-    document.getElementById("edad").value = user.edad || "";
-    document.getElementById("email").value = user.email || "";
-    document.getElementById("telefono").value = user.telefono || "";
-    document.getElementById("rol").value = user.rol || "cliente";
+          currentUser = await resp.json();
+          renderNavByRole(currentRol);
+          loadUserDataFromBackend(currentUser);
+          configureRoleFieldByPermission();
 
-    updateDisplay(user);
-  }
+          document
+            .getElementById("photo-file-input")
+            .addEventListener("change", function (e) {
+              if (e.target.files && e.target.files[0]) {
+                selectedPhotoFile = e.target.files[0];
+                document.getElementById("file-name").textContent =
+                  selectedPhotoFile.name;
+
+                const reader = new FileReader();
+                reader.onload = function (e2) {
+                  document.getElementById("photo-preview").src =
+                    e2.target.result;
+                };
+                reader.readAsDataURL(selectedPhotoFile);
+              }
+            });
+
+          document
+            .getElementById("profile-form")
+            .addEventListener("submit", function (e) {
+              e.preventDefault();
+              saveUserDataToBackend();
+            });
+        } catch (err) {
+          console.error("Error al cargar perfil:", err);
+          alert("Error de conexión al cargar tu perfil");
+        }
+      });
+        function loadUserDataFromBackend(user) {
+        document.getElementById("id_usuario").value = user.id_usuario;
+        document.getElementById("nombre").value = user.nombre || "";
+        document.getElementById("apellidoP").value = user.apellidoP || "";
+        document.getElementById("apellidoM").value = user.apellidoM || "";
+        document.getElementById("edad").value = user.edad || "";
+        document.getElementById("email").value = user.email || "";
+        document.getElementById("telefono").value = user.telefono || "";
+        document.getElementById("rol").value = user.rol || "cliente";
+
+        updateDisplay(user);
+      }
+
 
   function updateDisplay(user) {
         const nombreCompleto = `${user.nombre || ""} ${user.apellidoP || ""} ${
