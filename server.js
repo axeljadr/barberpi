@@ -336,8 +336,10 @@ app.put(
     if (!req.file) {
       return res.status(400).json({ error: "No se recibió ninguna imagen" });
     }
+    const protocolo = req.protocol;
+    const host = req.get("host");
+    const url_foto = `${protocolo}://${host}/uploads/fotosdeperfil/${req.file.filename}`;
 
-    const url_foto = `/uploads/fotosdeperfil/${req.file.filename}`;
 
     try {
       const pool = await conectarDB();
