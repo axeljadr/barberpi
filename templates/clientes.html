@@ -5,20 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lista de Clientes</title>
     <link rel="stylesheet" href="/static/clientes.css" />
-
   </head>
-
   <body>
+    <header class="header">
+      <div class="block">
+        <img
+          class="imagen-de-barberia"
+          src="/images/barber.jpg"
+          alt="Logo Barber Studio"
+        />
+      </div>
+      <nav class="navigation-pill-list" aria-label="Navegación principal">
+        <a href="/perfil" class="navigation-pill"
+          ><span class="title">Mi Perfil</span></a
+        >
+        <a href="/homebarber" class="navigation-pill"
+          ><span class="title">Inicio</span></a
+        >
+        <a href="/barber_agenda" class="navigation-pill"
+          ><span class="">Agenda</span></a
+        >
+        <a href="/notibarbero" class="navigation-pill"
+          ><span class="title">Notificaciones</span></a
+        >
+        <a href="/login" class="navigation-pill"
+          ><span class="title">Cerrar Sesión</span></a
+        >
+      </nav>
+    </header>
     <h1>Lista de Clientes</h1>
-
-    <div class="search-bar">
-      <input 
-        type="text" 
-        id="search-input" 
-        placeholder="Buscar cliente por nombre o ID..."
-      />
-      <button class="btn-refresh" onclick="loadClients()">Actualizar</button>
-    </div>
 
     <div class="table-container">
       <table>
@@ -104,3 +119,4 @@
     </script>
   </body>
 </html>
+
