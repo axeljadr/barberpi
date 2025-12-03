@@ -362,13 +362,13 @@
       }
 
 
-  function normalizeImageUrl(url) {
-    if (!url) return "/images/default-avatar.jpg";
-    const s = String(url).trim();
-    if (s.startsWith("http://") || s.startsWith("https://")) return s;
-    if (s.startsWith("/")) return `${API_BASE_URL}${s}`;
-    return `${API_BASE_URL}/${s}`;
-  }
+function normalizeImageUrl(url) {
+  if (!url) return "/barberpi/images/default-avatar.jpg";
+  const s = String(url).trim();
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  if (s.startsWith("/")) return `${window.location.origin}${s}`;
+  return `${window.location.origin}/${s}`;
+}
 
   document.addEventListener("DOMContentLoaded", async function () {
     const token = getToken();
@@ -461,12 +461,8 @@
     const fotoUrl = user.foto_perfil || "/images/default-avatar.jpg";
     const fotoCompleta = normalizeImageUrl(fotoUrl);
 
-    // asignar imagen al perfil y preview (usando =, no |)
-    const imgEl = document.getElementById("profile-picture");
-    if (imgEl) imgEl.src = fotoCompleta;
-
-    const previewEl = document.getElementById("photo-preview");
-    if (previewEl) previewEl.src = fotoCompleta;
+document.getElementById("profile-picture").src = fotoCompleta;
+document.getElementById("photo-preview").src = fotoCompleta;
   }
 
   function openPhotoModal() {
@@ -524,8 +520,6 @@
   }
 
   async function saveUserDataToBackend() {
-    // mantén tu implementación existente para actualizar datos generales
-    // solo asegúrate de enviar foto_perfil tal cual en el body
   }
 </script>
   </body>
