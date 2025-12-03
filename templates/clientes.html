@@ -7,7 +7,6 @@
 
     <link rel="stylesheet" href="/static/barbera.css" />
     <link rel="stylesheet" href="/static/clientes.css" />
-
   </head>
   <body>
     <header class="header">
@@ -23,6 +22,9 @@
           <span class="title">Mi Perfil</span>
         </a>
         <a href="/homebarber" class="navigation-pill">
+          <span class="title">Inicio</span>
+        </a>
+        <a href="/clientes" class="navigation-pill">
           <span class="title">Inicio</span>
         </a>
         <a href="/barber_agenda" class="navigation-pill">
@@ -523,48 +525,6 @@
             await showToastFallback("Error al actualizar cliente", "error");
           }
         }
-
-        async function confirmDelete(id) {
-          if (!confirm("¿Eliminar cliente? Esta acción es irreversible."))
-            return;
-          try {
-            await apiFetch(`/usuarios/${id}`, { method: "DELETE" });
-            await showToastFallback("Cliente eliminado", "success");
-            // reload current page
-            await loadClients();
-          } catch (err) {
-            console.error("confirmDelete error", err);
-            await showToastFallback("Error al eliminar cliente", "error");
-          }
-        }
-
-        // create (simple prompt)
-        async function createClient() {
-          try {
-            const nombre = prompt("Nombre completo del nuevo cliente");
-            if (!nombre) return;
-            const email = prompt("Email");
-            if (!email) return;
-            const telefono = prompt("Teléfono (opcional)") || null;
-
-            const payload = {
-              nombre: String(nombre).trim(),
-              email: String(email).trim(),
-              telefono,
-            };
-            await apiFetch("/usuarios", {
-              method: "POST",
-              body: JSON.stringify(payload),
-            });
-            await showToastFallback("Cliente creado", "success");
-            await loadClients();
-          } catch (err) {
-            console.error("createClient error", err);
-            await showToastFallback("Error al crear cliente", "error");
-          }
-        }
-
-        // init / events
         function attachEvents() {
           document
             .getElementById("clients-table")
