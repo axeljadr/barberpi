@@ -2449,6 +2449,64 @@ app.get("/api/auth/perfil/:id_usuario", verificarToken, async (req, res) => {
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
+app.get("/api/auth/perfil/:id", verificarToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    // si no eres admin solo puedes ver tu propio perfil
+    if (req.usuario.rol !== "admin" && req.usuario.id !== id) {
+      return res.status(403).json({ error: "No autorizado" });
+    }
+
+    const pool = await conectarDB();
+    const result = await pool
+      .request()
+      .input("id_usuario", mssql.Int, id)
+      .query(`
+        SELECT id_usuario, nombre, apellidoP, apellidoM,
+               edad, email, telefono, foto_perfil, rol
+        FROM usuarios
+        WHERE id_usuario = @id_usuario
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json(result.recordset[0]);
+  } catch (error) {
+    console.error("Error en GET /perfil/id:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+app.put("/api/auth/perfil/:id/foto", verificarToken, upload.single("foto"), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    if (req.usuario.rol !== "admin" && req.usuario.id !== id) {
+      return res.status(403).json({ error: "No autorizado" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No se envió archivo" });
+    }
+
+    const fotoUrl = `/uploads/${req.file.filename}`;
+
+    const pool = await conectarDB();
+    await pool
+      .request()
+      .input("id_usuario", mssql.Int, id)
+      .input("foto", mssql.VarChar, fotoUrl)
+      .query(`UPDATE usuarios SET foto_perfil = @foto WHERE id_usuario = @id_usuario`);
+
+    res.json({ foto_perfil: fotoUrl });
+  } catch (error) {
+    console.error("Error al subir foto:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 conectarDB()
   .then(() => {
     app.listen(PORT, () => console.log(`Servidor en el puerto ${PORT}`));
