@@ -438,43 +438,56 @@
 
     updateDisplay(user);
   }
-function normalizeImageUrl(url) {
-  if (!url) return "/images/default-avatar.jpg";
-  const s = String(url).trim();
-  if (s.startsWith("http://") || s.startsWith("https://")) return s;
-  // si empieza con '/', anteponemos origin
-  if (s.startsWith("/")) return `${API_BASE}${s}`;
-  return `${API_BASE}/${s}`;
-}
 
-function updateDisplay(user) {
-  const nombreCompleto = `${user.nombre || ""} ${user.apellidoP || ""} ${user.apellidoM || ""}`.trim();
-  document.getElementById("display-name").textContent = nombreCompleto || "Ingresa tus datos";
-  document.getElementById("display-role").textContent = (user.rol || "cliente")[0].toUpperCase() + (user.rol || "cliente").slice(1);
-  document.getElementById("display-id").textContent = user.id_usuario || "-";
+ function updateDisplay(user) {
+        const nombreCompleto = `${user.nombre || ""} ${user.apellidoP || ""} ${
+          user.apellidoM || ""
+        }`.trim();
 
-  const fotoUrl = user.foto_perfil || "/images/default-avatar.jpg";
-  const fotoCompleta = normalizeImageUrl(fotoUrl);
+        document.getElementById("display-name").textContent =
+          nombreCompleto || "Ingresa tus datos";
+        document.getElementById("display-role").textContent =
+          (user.rol || "cliente").charAt(0).toUpperCase() +
+          (user.rol || "cliente").slice(1);
+        document.getElementById("display-id").textContent =
+          user.id_usuario || "-";
 
-  console.log("updateDisplay -> fotoUrl:", fotoUrl, "fotoCompleta:", fotoCompleta); // debug
-  const img = document.getElementById("profile-picture");
-  if (img) img.src = fotoCompleta;
-  const preview = document.getElementById("photo-preview");
-  if (preview) preview.src = fotoCompleta;
-}
+        const fotoUrl =
+          user.foto_perfil || "/barberpi/images/default-avatar.jpg";
+        const fotoCompleta = fotoUrl.startsWith("http")
+          ? fotoUrl
+          : `http://localhost:4000${fotoUrl}`;
 
-function openPhotoModal() {
-  document.getElementById("photo-modal").style.display = "flex";
-  selectedPhotoFile = null;
-  document.getElementById("file-name").textContent = "Ningún archivo seleccionado";
-  document.getElementById("photo-file-input").value = "";
+        document.getElementById("profile-picture").src = fotoCompleta;
+        document.getElementById("photo-preview").src = fotoCompleta;
+      }
 
-  const fotoActual = currentUser?.foto_perfil || "/images/default-avatar.jpg";
-  const fotoCompleta = normalizeImageUrl(fotoActual);
-  console.log("openPhotoModal -> fotoActual:", fotoActual, "fotoCompleta:", fotoCompleta); // debug
-  const preview = document.getElementById("photo-preview");
-  if (preview) preview.src = fotoCompleta;
-}
+      function configureRoleFieldByPermission() {
+        const rolSelect = document.getElementById("rol");
+
+        if (!rolSelect) return;
+
+        if (currentRol === "admin") {
+          rolSelect.disabled = false;
+        } else {
+          rolSelect.disabled = true;
+        }
+      }
+
+      function openPhotoModal() {
+        document.getElementById("photo-modal").style.display = "flex";
+        selectedPhotoFile = null;
+        document.getElementById("file-name").textContent =
+          "Ningún archivo seleccionado";
+        document.getElementById("photo-file-input").value = "";
+
+        const fotoActual =
+          currentUser.foto_perfil || "/barberpi/images/default-avatar.jpg";
+        const fotoCompleta = fotoActual.startsWith("http")
+          ? fotoActual
+          : `http://localhost:4000${fotoActual}`;
+        document.getElementById("photo-preview").src = fotoCompleta;
+      }
 
   function closePhotoModal() {
     document.getElementById("photo-modal").style.display = "none";
