@@ -24,15 +24,6 @@ app.use(express.urlencoded({ extended: true }));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const UPLOADS_ROOT = path.join(__dirname, "uploads");
-const UPLOADS_PERFIL = path.join(UPLOADS_ROOT, "fotosdeperfil");
-try {
-  if (!fs.existsSync(UPLOADS_ROOT)) fs.mkdirSync(UPLOADS_ROOT);
-  if (!fs.existsSync(UPLOADS_PERFIL))
-    fs.mkdirSync(UPLOADS_PERFIL, { recursive: true });
-} catch (err) {
-  console.error("Error creando carpetas de uploads:", err);
-}
 
 // Servir archivos estáticos
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -54,7 +45,7 @@ const storage = multer.diskStorage({
 });
 const storagePerfil = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, UPLOADS_PERFIL);
+    cb(null, "uploads/fotosdeperfil/");
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
