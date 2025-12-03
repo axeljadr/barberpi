@@ -465,8 +465,10 @@ document.getElementById("photo-preview").src = fotoCompleta;
     document.getElementById("photo-file-input").value = "";
 
     const fotoActual = currentUser?.foto_perfil || "/images/default-avatar.jpg";
-    document.getElementById("photo-preview").src =
-      normalizeImageUrl(fotoActual);
+    const fotoCompleta = fotoActual.startsWith("http")
+          ? fotoActual
+          : `${API_BASE}${fotoActual}`;
+        document.getElementById("photo-preview").src = fotoCompleta;
   }
 
   function closePhotoModal() {
