@@ -314,74 +314,122 @@
       <div id="app-modal-container"></div>
     </div>
 
-    <script>
-      (function notifyHelpers() {
-        const toastContainer = document.getElementById("app-toast-container");
-        const modalContainer = document.getElementById("app-modal-container");
+ <script>
+  (function notifyHelpers() {
+    const toastContainer = document.getElementById("app-toast-container");
+    const modalContainer = document.getElementById("app-modal-container");
 
-        window.showToast = function (text = "", type = "info", timeout = 3500) {
-          return new Promise((resolve) => {
-            if (!toastContainer) {
-              console.warn("Toast container missing:", text);
-              return resolve();
-            }
-            const wrap = document.createElement("div");
-            wrap.className = `app-toast ${type}`;
-            wrap.innerHTML = `<div class="msg">${text}</div><button class="close-btn" aria-label="close">&times;</button>`;
-            const closeBtn = wrap.querySelector(".close-btn");
-            let removed = false;
-            const cleanup = () => {
-              if (removed) return;
-              removed = true;
-              wrap.style.opacity = "0";
-              setTimeout(() => {
-                try {
-                  toastContainer.removeChild(wrap);
-                } catch (e) {}
-                resolve();
-              }, 180);
-            };
-            closeBtn.addEventListener("click", cleanup);
-            toastContainer.appendChild(wrap);
-            setTimeout(cleanup, timeout || 3500);
-          });
+    window.showToast = function (text = "", type = "info", timeout = 3500) {
+      return new Promise((resolve) => {
+        if (!toastContainer) {
+          console.warn("Toast container missing:", text);
+          return resolve();
+        }
+        const wrap = document.createElement("div");
+        wrap.className = `app-toast ${type}`;
+        wrap.innerHTML = `<div class="msg">${text}</div><button class="close-btn" aria-label="close">&times;</button>`;
+        const closeBtn = wrap.querySelector(".close-btn");
+        let removed = false;
+        const cleanupToast = () => {
+          if (removed) return;
+          removed = true;
+          wrap.style.opacity = "0";
+          setTimeout(() => {
+            try { toastContainer.removeChild(wrap); } catch (e) {}
+            resolve();
+          }, 180);
+        };
+        closeBtn && closeBtn.addEventListener("click", cleanupToast);
+        toastContainer.appendChild(wrap);
+        // force reflow if you want animation: void wrap.offsetWidth;
+        setTimeout(cleanupToast, timeout || 3500);
+      });
+    };
+
+    window.showConfirm = function (title = "Confirmar", message = "") {
+      return new Promise((resolve) => {
+        if (!modalContainer) {
+          console.warn("Modal container missing:", title, message);
+          return resolve(false);
+        }
+
+        // Backdrop
+        const backdrop = document.createElement("div");
+        backdrop.className = "app-modal-backdrop";
+        backdrop.innerHTML = `
+          <div class="app-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+            <h3 id="confirm-title">${title}</h3>
+            <p>${message}</p>
+            <div class="row">
+              <button class="app-btn ghost" id="app-cancel-btn">Cancelar</button>
+              <button class="app-btn primary" id="app-ok-btn">Aceptar</button>
+            </div>
+          </div>
+        `;
+
+        // Append to DOM
+        modalContainer.appendChild(backdrop);
+
+        // Grab elements (pueden ser null en casos extremos)
+        const okBtn = backdrop.querySelector("#app-ok-btn");
+        const cancelBtn = backdrop.querySelector("#app-cancel-btn");
+        const modal = backdrop.querySelector(".app-modal");
+
+        // Focus en aceptar por accesibilidad
+        if (okBtn) okBtn.focus();
+
+        let finished = false;
+        const cleanup = (value) => {
+          if (finished) return;
+          finished = true;
+
+          // remover listeners
+          try {
+            okBtn && okBtn.removeEventListener("click", onOk);
+            cancelBtn && cancelBtn.removeEventListener("click", onCancel);
+            backdrop.removeEventListener("click", onBackdropClick);
+            document.removeEventListener("keydown", onKeyDown);
+          } catch (e) {}
+
+          // remueve del DOM con ligera transición
+          if (modal) modal.style.opacity = "0.0";
+          backdrop.style.opacity = "0";
+          setTimeout(() => {
+            try { modalContainer.removeChild(backdrop); } catch (e) {}
+            resolve(Boolean(value));
+          }, 180);
         };
 
-        window.showConfirm = function (title = "Confirmar", message = "") {
-          return new Promise((resolve) => {
-            if (!modalContainer) {
-              console.warn("Modal container missing:", title, message);
-              return resolve(false);
-            }
-            const backdrop = document.createElement("div");
-            backdrop.className = "app-modal-backdrop";
-            backdrop.innerHTML = `
-              <div class="app-modal" role="dialog" aria-modal="true">
-                <h3>${title}</h3>
-                <p>${message}</p>
-                <div class="row">
-                  <button class="app-btn ghost" id="app-cancel-btn">Cancelar</button>
-                  <button class="app-btn primary" id="app-ok-btn">Aceptar</button>
-                </div>
-              </div>
-            `;
-            modalContainer.appendChild(backdrop);
-            const ok = backdrop.querySelector("#app-ok-btn");
-            const cancel = backdrop.querySelector("#app-cancel-btn");
-            const cleanup = (value) => {
-              try {
-                modalContainer.removeChild(backdrop);
-              } catch (e) {}
-              resolve(Boolean(value));
-            };
-            cancel.addEventListener("click", () => cleanup(false));
-            ok.addEventListener("click", () => cleanup(true));
-            backdrop.addEventListener("click", (ev) => {
-              if (ev.target === backdrop) cleanup(false);
-            });
-          });
+        // Handlers
+        const onOk = (ev) => {
+          ev && ev.preventDefault();
+          cleanup(true);
         };
-      })();
+        const onCancel = (ev) => {
+          ev && ev.preventDefault();
+          cleanup(false);
+        };
+        const onBackdropClick = (ev) => {
+          // solo click en backdrop (no en el modal)
+          if (ev.target === backdrop) cleanup(false);
+        };
+        const onKeyDown = (ev) => {
+          if (ev.key === "Escape" || ev.key === "Esc") {
+            cleanup(false);
+          } else if (ev.key === "Enter") {
+            // opcional: Enter confirma si el foco NO está en cancelar
+            // cleanup(true);
+          }
+        };
+
+        // Attach listeners de forma segura
+        cancelBtn && cancelBtn.addEventListener("click", onCancel);
+        okBtn && okBtn.addEventListener("click", onOk);
+        backdrop.addEventListener("click", onBackdropClick);
+        document.addEventListener("keydown", onKeyDown);
+      });
+    };
+  })();
 
       const API_BASE =
         window.location.hostname.includes("localhost") ||
