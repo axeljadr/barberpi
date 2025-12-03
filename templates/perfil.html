@@ -483,14 +483,25 @@
         if (displayIdEl) displayIdEl.textContent = user.id_usuario || "-";
 
         const fotoUrl = user.foto_perfil || "/images/default-avatar.jpg";
-        const fotoCompleta = fotoUrl.startsWith("http")
-          ? fotoUrl
-          : `${API_BASE}${fotoUrl}`;
 
-        const profilePic = document.getElementById("profile-picture");
-        const preview = document.getElementById("photo-preview");
-        if (profilePic) profilePic.src = fotoCompleta;
-        if (preview) preview.src = fotoCompleta;
+        let fotoCompleta = fotoUrl;
+        if (!fotoUrl.startsWith("http")) {
+          const backendBase = (() => {
+            if (API_AUTH.startsWith("/")) {
+              return window.location.origin;
+            }
+            try {
+              return new URL(API_AUTH).origin;
+            } catch (e) {
+              return window.location.origin;
+            }
+          })();
+
+          fotoCompleta = `${backendBase}${fotoUrl}`;
+        }
+
+        document.getElementById("profile-picture").src = fotoCompleta;
+        document.getElementById("photo-preview").src = fotoCompleta;
       }
 
       function configureRoleFieldByPermission() {
