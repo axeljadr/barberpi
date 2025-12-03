@@ -1408,15 +1408,23 @@ app.post("/api/marcar-dia", verificarToken, async (req, res) => {
     return res.status(400).json({ error: "Datos incompletos" });
   }
 
+  const fechaDate = new Date(fecha);
+  if (isNaN(fechaDate)) {
+    return res.status(400).json({ error: "Fecha inválida" });
+  }
+
   try {
+    console.log("marcar-dia - datos recibidos:", { id_barbero: req.usuario.id, fecha: fechaDate, tipo, mensaje });
+
     const pool = await conectarDB();
 
     await pool
       .request()
       .input("id_barbero", mssql.Int, req.usuario.id)
-      .input("fecha", mssql.Date, fecha)
+      .input("fecha", mssql.Date, fechaDate)
       .input("mensaje", mssql.NVarChar(500), mensaje || tipo)
-      .input("tipo", mssql.VarChar(20), tipo).query(`
+      .input("tipo", mssql.VarChar(20), tipo)
+      .query(`
         INSERT INTO MensajesCalendario (id_barbero, fecha, mensaje, tipo, activo)
         VALUES (@id_barbero, @fecha, @mensaje, @tipo, 1)
       `);
