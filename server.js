@@ -72,22 +72,20 @@ const upload = multer({
     cb(null, true);
   },
 });
-// Helpers para normalizar URLs y obtener path local
 function ensureAbsoluteUrl(url, req) {
   if (!url) return null;
   const s = String(url).trim();
   if (s.startsWith("http://") || s.startsWith("https://")) return s;
-  // ruta relativa (ej. /uploads/archivo.jpg) -> construir absoluta con host actual
-  const protocolo = req.protocol;
-  const host = req.get("host");
-  return `${protocolo}://${host}${s.startsWith("/") ? "" : "/"}${s}`;
+  // ruta relativa (ej. /uploads/archivo.jpg o uploads/archivo.jpg)
+  const protocolo = req.protocol || "https";
+  const host = req.get ? req.get("host") : process.env.HOST || "localhost:4000";
+  const withLeadingSlash = s.startsWith("/") ? s : "/" + s;
+  return `${protocolo}://${host}${withLeadingSlash}`;
 }
-
 function getLocalPathFromUrl(url) {
   if (!url) return null;
   try {
     const s = String(url).trim();
-    // Si es absoluta, parsear pathname
     if (s.startsWith("http://") || s.startsWith("https://")) {
       const u = new URL(s);
       if (u.pathname && u.pathname.startsWith("/uploads/")) {
@@ -95,20 +93,15 @@ function getLocalPathFromUrl(url) {
       }
       return null;
     }
-    // relativa: /uploads/archivo.jpg -> ./uploads/archivo.jpg
-    if (s.startsWith("/uploads/")) {
-      return path.join(__dirname, s.replace(/^\//, ""));
-    }
-    // si vino sin slash "uploads/archivo.jpg"
-    if (s.startsWith("uploads/")) {
-      return path.join(__dirname, s);
-    }
+    if (s.startsWith("/uploads/")) return path.join(__dirname, s.replace(/^\//, ""));
+    if (s.startsWith("uploads/")) return path.join(__dirname, s);
     return null;
   } catch (e) {
     console.warn("getLocalPathFromUrl error:", e);
     return null;
   }
 }
+
 const dbConfig = {
   server: process.env.DB_HOST || "barberpisql.database.windows.net",
   port: parseInt(process.env.DB_PORT || "1433", 10),
@@ -288,6 +281,37 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+
+app.get("/api/auth/perfil", verificarToken, async (req, res) => {
+  try {
+    const pool = await conectarDB();
+    const result = await pool
+      .request()
+      .input("id_usuario", mssql.Int, req.usuario.id).query(`
+        SELECT 
+          id_usuario,
+          nombre,
+          apellidoP,
+          apellidoM,
+          edad,
+          email,
+          telefono,
+          foto_perfil,
+          rol
+        FROM usuarios
+        WHERE id_usuario = @id_usuario
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json(result.recordset[0]);
+  } catch (error) {
+    console.error("Error en GET /perfil:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
 
 
 app.put("/api/auth/perfil", verificarToken, async (req, res) => {
