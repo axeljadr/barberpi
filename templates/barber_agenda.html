@@ -74,47 +74,6 @@
           </thead>
           <tbody id="schedule-body"></tbody>
         </table>
-        <div class="action-buttons">
-          <button class="btn btn-success" id="mark-working">
-            Marcar como Trabajando
-          </button>
-          <button id="open-servicios-modal" class="btn btn-secondary">
-            Gestionar Servicios
-          </button>
-
-          <div id="servicios-modal" class="modal" style="display: none">
-            <div class="modal-content">
-              <h3>Servicios</h3>
-              <table id="servicios-table" class="table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Precio</th>
-                    <th>Activo</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-              <h4>Agregar / Editar servicio</h4>
-              <input type="hidden" id="serv-id" />
-              <div>
-                <label>Nombre</label><input type="text" id="serv-nombre" />
-              </div>
-              <div>
-                <label>Precio</label
-                ><input type="number" id="serv-precio" step="0.01" />
-              </div>
-              <div>
-                <label
-                  ><input type="checkbox" id="serv-activo" checked />
-                  Activo</label
-                >
-              </div>
-              <button id="save-servicio">Guardar</button>
-              <button id="close-servicios-modal">Cerrar</button>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
 
@@ -1089,57 +1048,6 @@
           updateDaySchedule(selectedDate);
         } catch (err) {
           console.error("Error al reagendar cita:", err);
-          await showToast("Error de conexión", "error", 2000);
-        }
-      }
-
-      async function markDayAs(dateStr, tipo) {
-        const token = getToken();
-        const mensaje = tipo === "busy" ? "No disponible" : "Trabajando";
-        try {
-          const resp = await fetch(`${API_BASE}/marcar-dia`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ fecha: dateStr, tipo, mensaje }),
-          });
-          if (!resp.ok) {
-            await showToast("Error al marcar día", "error", 2000);
-            return;
-          }
-          await showToast("Día marcado correctamente", "success", 1500);
-          updateDaySchedule(dateStr);
-        } catch (err) {
-          console.error("Error al marcar día:", err);
-          await showToast("Error de conexión", "error", 2000);
-        }
-      }
-
-      async function addCustomMessage(dateStr) {
-        const mensaje = prompt(
-          "Ingresa un mensaje personalizado para este día:"
-        );
-        if (!mensaje) return;
-        const token = getToken();
-        try {
-          const resp = await fetch(`${API_BASE}/marcar-dia`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ fecha: dateStr, tipo: "info", mensaje }),
-          });
-          if (!resp.ok) {
-            await showToast("Error al agregar mensaje", "error", 2000);
-            return;
-          }
-          await showToast("Mensaje agregado correctamente", "success", 1500);
-          updateDaySchedule(dateStr);
-        } catch (err) {
-          console.error("Error al agregar mensaje:", err);
           await showToast("Error de conexión", "error", 2000);
         }
       }
