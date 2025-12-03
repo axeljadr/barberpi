@@ -362,14 +362,6 @@
       }
 
 
-function normalizeImageUrl(url) {
-  if (!url) return "/barberpi/images/default-avatar.jpg";
-  const s = String(url).trim();
-  if (s.startsWith("http://") || s.startsWith("https://")) return s;
-  if (s.startsWith("/")) return `${window.location.origin}${s}`;
-  return `${window.location.origin}/${s}`;
-}
-
   document.addEventListener("DOMContentLoaded", async function () {
     const token = getToken();
     const rol = getRol();
@@ -459,7 +451,7 @@ function normalizeImageUrl(url) {
     document.getElementById("display-id").textContent = user.id_usuario || "-";
 
     const fotoUrl = user.foto_perfil || "/images/default-avatar.jpg";
-    const fotoCompleta = normalizeImageUrl(fotoUrl);
+    const fotoCompleta = `${API_BASE}${fotoUrl}`;
 
 document.getElementById("profile-picture").src = fotoCompleta;
 document.getElementById("photo-preview").src = fotoCompleta;
