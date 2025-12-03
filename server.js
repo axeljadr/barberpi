@@ -72,7 +72,43 @@ const upload = multer({
     cb(null, true);
   },
 });
+// Helpers para normalizar URLs y obtener path local
+function ensureAbsoluteUrl(url, req) {
+  if (!url) return null;
+  const s = String(url).trim();
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  // ruta relativa (ej. /uploads/archivo.jpg) -> construir absoluta con host actual
+  const protocolo = req.protocol;
+  const host = req.get("host");
+  return `${protocolo}://${host}${s.startsWith("/") ? "" : "/"}${s}`;
+}
 
+function getLocalPathFromUrl(url) {
+  if (!url) return null;
+  try {
+    const s = String(url).trim();
+    // Si es absoluta, parsear pathname
+    if (s.startsWith("http://") || s.startsWith("https://")) {
+      const u = new URL(s);
+      if (u.pathname && u.pathname.startsWith("/uploads/")) {
+        return path.join(__dirname, u.pathname.replace(/^\//, ""));
+      }
+      return null;
+    }
+    // relativa: /uploads/archivo.jpg -> ./uploads/archivo.jpg
+    if (s.startsWith("/uploads/")) {
+      return path.join(__dirname, s.replace(/^\//, ""));
+    }
+    // si vino sin slash "uploads/archivo.jpg"
+    if (s.startsWith("uploads/")) {
+      return path.join(__dirname, s);
+    }
+    return null;
+  } catch (e) {
+    console.warn("getLocalPathFromUrl error:", e);
+    return null;
+  }
+}
 const dbConfig = {
   server: process.env.DB_HOST || "barberpisql.database.windows.net",
   port: parseInt(process.env.DB_PORT || "1433", 10),
@@ -406,7 +442,7 @@ app.post(
         .json({ error: "Solo barberos y admins pueden subir imágenes" });
     }
 
-    const { nombre, descripcion, nombre_barber, nombre_barber_ref } = req.body;
+    const { nombre, descripcion, nombre_barber, nombre_barber_ref, url_imagen: urlDesdeFront } = req.body;
 
     if (!nombre || !descripcion) {
       return res
@@ -414,11 +450,16 @@ app.post(
         .json({ error: "Nombre y descripción son obligatorios" });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ error: "Debes seleccionar una imagen" });
+    // Determinar URL final: si el backend recibió un archivo, construir URL absoluta.
+    // Si el frontend envió una url (ej. Azure), usarla tal cual.
+    let url_imagen = null;
+    if (req.file) {
+      url_imagen = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    } else if (urlDesdeFront && urlDesdeFront.trim() !== "") {
+      url_imagen = urlDesdeFront.trim();
+    } else {
+      return res.status(400).json({ error: "Debes seleccionar una imagen o enviar url_imagen" });
     }
-
-    const url_imagen = `/uploads/${req.file.filename}`;
 
     try {
       const pool = await conectarDB();
@@ -488,17 +529,8 @@ app.get("/api/catalogo/mis-trabajos", verificarToken, async (req, res) => {
   try {
     const pool = await conectarDB();
 
-    const usuarioResult = await pool
-      .request()
-      .input("id_usuario", mssql.Int, req.usuario.id).query(`
-        SELECT nombre 
-        FROM usuarios 
-        WHERE id_usuario = @id_usuario
-      `);
-
-    let query;
     const request = pool.request();
-    query = `
+    const query = `
         SELECT 
           ic.id_foto,
           ic.nombre,
@@ -510,7 +542,16 @@ app.get("/api/catalogo/mis-trabajos", verificarToken, async (req, res) => {
         ORDER BY ic.fecha_subida DESC
       `;
     const result = await request.query(query);
-    res.json(result.recordset);
+
+    // Normalizar cada url_imagen: si es relativa, convertir a absoluta usando req
+    const rows = result.recordset.map((r) => {
+      return {
+        ...r,
+        url_imagen: r.url_imagen ? ensureAbsoluteUrl(r.url_imagen, req) : null,
+      };
+    });
+
+    res.json(rows);
   } catch (error) {
     console.error("Error al obtener catálogo:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -528,7 +569,7 @@ app.put(
     }
 
     const { id_foto } = req.params;
-    const { nombre, descripcion, nombre_barber_ref } = req.body;
+    const { nombre, descripcion, nombre_barber_ref, url_imagen: urlDesdeFront } = req.body;
 
     if (!nombre || !descripcion) {
       return res
@@ -585,20 +626,27 @@ app.put(
       }
 
       let nuevaUrlImagen = registro.url_imagen;
-      if (req.file) {
-        nuevaUrlImagen = `/uploads/${req.file.filename}`;
 
-        try {
-          const filePath = path.join(
-            __dirname,
-            registro.url_imagen.replace("/uploads/", "uploads/")
-          );
-          fs.unlink(filePath, (err) => {
-            if (err)
-              console.warn("No se pudo borrar archivo anterior:", err.message);
+      if (req.file) {
+        // nueva imagen subida -> url absoluta
+        nuevaUrlImagen = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+
+        // intentar borrar archivo anterior si era local
+        const localPath = getLocalPathFromUrl(registro.url_imagen);
+        if (localPath) {
+          fs.unlink(localPath, (err) => {
+            if (err) console.warn("No se pudo borrar archivo anterior:", err.message);
           });
-        } catch (e) {
-          console.warn("Error al intentar eliminar archivo anterior:", e);
+        }
+      } else if (urlDesdeFront && urlDesdeFront.trim() !== "") {
+        // si el frontend envía una URL (ej. Azure) se usa tal cual
+        nuevaUrlImagen = urlDesdeFront.trim();
+        // borrar anterior si era local
+        const localPath = getLocalPathFromUrl(registro.url_imagen);
+        if (localPath) {
+          fs.unlink(localPath, (err) => {
+            if (err) console.warn("No se pudo borrar archivo anterior:", err.message);
+          });
         }
       }
 
