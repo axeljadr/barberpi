@@ -143,17 +143,6 @@ function verificarToken(req, res, next) {
     return res.status(401).json({ error: "Token inválido o expirado" });
   }
 }
-// DEBUG - listar archivos de fotos de perfil (temporal)
-app.get("/debug/uploads/fotosdeperfil", (req, res) => {
-  try {
-    const dir = path.join(__dirname, "uploads", "fotosdeperfil");
-    const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
-    res.json({ dir, count: files.length, files });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
-app.set('trust proxy', true);
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "login.html"));
 });
@@ -194,39 +183,61 @@ app.get("/clientes", (req, res) => {
 });
 
 app.post("/api/auth/registro", async (req, res) => {
-  const { nombre, email, contraseña } = req.body;
-
-  if (!nombre || !email || !contraseña) {
-    return res.status(400).json({ error: "Faltan datos obligatorios" });
-  }
-
   try {
+    let { nombre, email } = req.body;
+    const rawPassword = req.body.password ?? req.body.contraseña;
+
+    if (!nombre || !email || !rawPassword) {
+      return res.status(400).json({ error: "Faltan datos obligatorios" });
+    }
+
+    nombre = String(nombre).trim();
+    email = String(email).trim().toLowerCase();
+
+    if (rawPassword.length < 8) {
+      return res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres" });
+    }
+
     const pool = await conectarDB();
 
     const existe = await pool
       .request()
-      .input("email", mssql.NVarChar, email)
-      .query("SELECT * FROM usuarios WHERE email = @email");
+      .input("email", mssql.NVarChar(255), email)
+      .query("SELECT id FROM usuarios WHERE LOWER(email) = LOWER(@email)");
 
     if (existe.recordset.length > 0) {
       return res.status(400).json({ error: "El email ya está registrado" });
     }
 
-    const hashed = await bcrypt.hash(contraseña, 10);
+    const hashed = await bcrypt.hash(rawPassword, 10);
 
-    await pool
+    const insertResult = await pool
       .request()
-      .input("nombre", mssql.NVarChar, nombre)
-      .input("email", mssql.NVarChar, email)
-      .input("contraseña", mssql.NVarChar, hashed)
+      .input("nombre", mssql.NVarChar(255), nombre)
+      .input("email", mssql.NVarChar(255), email)
+      .input("contraseña", mssql.NVarChar(255), hashed)
       .query(
-        "INSERT INTO usuarios (nombre, email, contraseña) VALUES (@nombre, @email, @contraseña)"
+        `INSERT INTO usuarios (nombre, email, contraseña)
+         OUTPUT INSERTED.id, INSERTED.email
+         VALUES (@nombre, @email, @contraseña)`
       );
 
-    res.json({ mensaje: "Usuario registrado correctamente" });
+    const inserted = insertResult.recordset && insertResult.recordset[0];
+    const userId = inserted ? inserted.id : null;
+
+    let token = null;
+    if (SECRET && userId) {
+      token = jwt.sign({ id: userId, email }, SECRET, { expiresIn: "7d" });
+    }
+
+    return res.status(201).json({
+      mensaje: "Usuario registrado correctamente",
+      id_usuario: userId,
+      token,
+    });
   } catch (error) {
     console.error("Error en /registro:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
+    return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
