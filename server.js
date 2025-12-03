@@ -289,36 +289,6 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 
-app.get("/api/auth/perfil", verificarToken, async (req, res) => {
-  try {
-    const pool = await conectarDB();
-    const result = await pool
-      .request()
-      .input("id_usuario", mssql.Int, req.usuario.id).query(`
-        SELECT 
-          id_usuario,
-          nombre,
-          apellidoP,
-          apellidoM,
-          edad,
-          email,
-          telefono,
-          foto_perfil,
-          rol
-        FROM usuarios
-        WHERE id_usuario = @id_usuario
-      `);
-
-    if (result.recordset.length === 0) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
-    }
-
-    res.json(result.recordset[0]);
-  } catch (error) {
-    console.error("Error en GET /perfil:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
 
 app.put("/api/auth/perfil", verificarToken, async (req, res) => {
   const {
@@ -442,7 +412,7 @@ app.post(
         .json({ error: "Solo barberos y admins pueden subir imágenes" });
     }
 
-    const { nombre, descripcion, nombre_barber, nombre_barber_ref, url_imagen: urlDesdeFront } = req.body;
+    const { nombre, descripcion, nombre_barber, nombre_barber_ref } = req.body;
 
     if (!nombre || !descripcion) {
       return res
@@ -450,16 +420,11 @@ app.post(
         .json({ error: "Nombre y descripción son obligatorios" });
     }
 
-    // Determinar URL final: si el backend recibió un archivo, construir URL absoluta.
-    // Si el frontend envió una url (ej. Azure), usarla tal cual.
-    let url_imagen = null;
-    if (req.file) {
-      url_imagen = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-    } else if (urlDesdeFront && urlDesdeFront.trim() !== "") {
-      url_imagen = urlDesdeFront.trim();
-    } else {
-      return res.status(400).json({ error: "Debes seleccionar una imagen o enviar url_imagen" });
+    if (!req.file) {
+      return res.status(400).json({ error: "Debes seleccionar una imagen" });
     }
+
+    const url_imagen = `/uploads/${req.file.filename}`;
 
     try {
       const pool = await conectarDB();
@@ -529,8 +494,17 @@ app.get("/api/catalogo/mis-trabajos", verificarToken, async (req, res) => {
   try {
     const pool = await conectarDB();
 
+    const usuarioResult = await pool
+      .request()
+      .input("id_usuario", mssql.Int, req.usuario.id).query(`
+        SELECT nombre 
+        FROM usuarios 
+        WHERE id_usuario = @id_usuario
+      `);
+
+    let query;
     const request = pool.request();
-    const query = `
+    query = `
         SELECT 
           ic.id_foto,
           ic.nombre,
@@ -542,16 +516,7 @@ app.get("/api/catalogo/mis-trabajos", verificarToken, async (req, res) => {
         ORDER BY ic.fecha_subida DESC
       `;
     const result = await request.query(query);
-
-    // Normalizar cada url_imagen: si es relativa, convertir a absoluta usando req
-    const rows = result.recordset.map((r) => {
-      return {
-        ...r,
-        url_imagen: r.url_imagen ? ensureAbsoluteUrl(r.url_imagen, req) : null,
-      };
-    });
-
-    res.json(rows);
+    res.json(result.recordset);
   } catch (error) {
     console.error("Error al obtener catálogo:", error);
     res.status(500).json({ error: "Error interno del servidor" });
