@@ -321,82 +321,13 @@
       <div id="app-modal-container"></div>
     </div>
 
-    <script>
-      (function notifyHelpers() {
-        const toastContainer = document.getElementById("app-toast-container");
-        const modalContainer = document.getElementById("app-modal-container");
-
-        window.showToast = function (text = "", type = "info", timeout = 3500) {
-          return new Promise((resolve) => {
-            if (!toastContainer) {
-              console.warn("Toast container missing:", text);
-              return resolve();
-            }
-            const wrap = document.createElement("div");
-            wrap.className = `app-toast ${type}`;
-            wrap.innerHTML = `<div class="msg">${text}</div><button class="close-btn" aria-label="close">&times;</button>`;
-            const closeBtn = wrap.querySelector(".close-btn");
-            let removed = false;
-            const cleanup = () => {
-              if (removed) return;
-              removed = true;
-              wrap.style.opacity = "0";
-              setTimeout(() => {
-                try {
-                  toastContainer.removeChild(wrap);
-                } catch (e) {}
-                resolve();
-              }, 180);
-            };
-            closeBtn.addEventListener("click", cleanup);
-            toastContainer.appendChild(wrap);
-            setTimeout(cleanup, timeout || 3500);
-          });
-        };
-
-        window.showConfirm = function (title = "Confirmar", message = "") {
-          return new Promise((resolve) => {
-            if (!modalContainer) {
-              console.warn("Modal container missing:", title, message);
-              return resolve(false);
-            }
-            const backdrop = document.createElement("div");
-            backdrop.className = "app-modal-backdrop";
-            backdrop.innerHTML = `
-                  <div class="app-modal" role="dialog" aria-modal="true">
-                    <h3>${title}</h3>
-                    <p>${message}</p>
-                    <div class="row">
-                      <button class="app-btn ghost" id="app-cancel-btn">Cancelar</button>
-                      <button class="app-btn primary" id="app-ok-btn">Aceptar</button>
-                    </div>
-                  </div>
-                `;
-            modalContainer.appendChild(backdrop);
-            const ok = backdrop.querySelector("#app-ok-btn");
-            const cancel = backdrop.querySelector("#app-cancel-btn");
-            const cleanup = (value) => {
-              try {
-                modalContainer.removeChild(backdrop);
-              } catch (e) {}
-              resolve(Boolean(value));
-            };
-            cancel.addEventListener("click", () => cleanup(false));
-            ok.addEventListener("click", () => cleanup(true));
-            backdrop.addEventListener("click", (ev) => {
-              if (ev.target === backdrop) cleanup(false);
-            });
-          });
-        };
-      })();
-      // Detectar base de la API: localhost durante dev, origin en producción (Render)
-      const API_BASE_URL = (function () {
-        const host = window.location.hostname;
-        if (host === "localhost" || host === "127.0.0.1") {
-          return "http://localhost:4000";
-        }
-        return window.location.origin;
-      })();
+        <script>
+      // Detectar automáticamente la URL base del backend
+      const API_BASE_URL =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:4000"
+          : window.location.origin;
 
       const API_AUTH = `${API_BASE_URL}/api/auth`;
       const API_CATALOG = `${API_BASE_URL}/api/catalogo`;
@@ -423,39 +354,7 @@
         }
       }
 
-      function normalizeImageUrl(url) {
-        if (!url) return "/images/placeholder.jpg";
-        const trimmed = String(url).trim();
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-          return trimmed;
-        }
-        if (trimmed.startsWith("/")) {
-          return `${API_BASE_URL}${trimmed}`;
-        }
-        return `${API_BASE_URL}/${trimmed}`;
-      }
-
-      function getToken() {
-        return localStorage.getItem("token");
-      }
-
-      function getRol() {
-        return localStorage.getItem("rol");
-      }
-
-      function redirigirSegunRol(rol) {
-        switch (rol) {
-          case "barbero":
-          case "admin":
-            window.location.href = "/homebarber";
-            break;
-          case "cliente":
-          default:
-            window.location.href = "/home";
-            break;
-        }
-      }
-
+      // Estado local sincronizado con la BD
       let catalogImages = [];
       let currentEditId = null;
       let itemToDelete = null;
@@ -469,17 +368,20 @@
         const rol = getRol();
         currentRol = rol;
 
+        // 1) Autenticación y rol
         if (!token) {
-          await showToast("Debes iniciar sesión", "info", 3000);
+          alert("Debes iniciar sesión");
           window.location.href = "/";
           return;
         }
 
+        // Permitimos sólo barbero y admin en esta página
         if (rol !== "barbero" && rol !== "admin") {
           redirigirSegunRol(rol);
           return;
         }
 
+        // 2) Cargar perfil
         try {
           const resp = await fetch(`${API_AUTH}/perfil`, {
             method: "GET",
@@ -487,11 +389,7 @@
           });
 
           if (resp.status === 401) {
-            await showToast(
-              "Sesión expirada. Vuelve a iniciar sesión.",
-              "info",
-              3000
-            );
+            alert("Sesión expirada. Vuelve a iniciar sesión.");
             localStorage.removeItem("token");
             localStorage.removeItem("rol");
             window.location.href = "/";
@@ -504,14 +402,25 @@
 
             const spanNombre = document.getElementById("nombre-usuario");
             if (spanNombre) spanNombre.textContent = user.nombre || "";
+
+            // Si en el futuro traes una descripción personalizada desde el backend:
+            // if (user.welcome_description) {
+            //   const welcomeP = document.getElementById("welcome-text");
+            //   if (welcomeP) welcomeP.textContent = user.welcome_description;
+            // }
           }
         } catch (err) {
           console.error("Error al obtener perfil", err);
         }
 
         loadWelcomeDescription();
+        // 3) Configurar eventos UI
         setupEventListeners();
+
+        // 4) Configurar campo barbero según el rol
         configureBarberFieldByRole();
+
+        // 5) Cargar trabajos reales desde el backend
         await loadCatalogFromServer();
         await loadMensajesBarbero();
         setupMensajesEvents();
@@ -520,7 +429,7 @@
       async function loadMensajesBarbero() {
         const token = getToken();
         const container = document.getElementById("messages-container-barber");
-        container.innerHTML = "<p>Cargando mensajes.</p>";
+        container.innerHTML = "<p>Cargando mensajes...</p>";
 
         try {
           const resp = await fetch(`${API_MENSAJES}/mis-mensajes`, {
@@ -543,36 +452,7 @@
             "<p>Error de conexión al cargar los mensajes.</p>";
         }
       }
-      async function loadCatalogFromServer() {
-        const token = getToken();
-        try {
-          const resp = await fetch(`${API_CATALOG}/mis-trabajos`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
 
-          if (!resp.ok) {
-            await showToast("Error al obtener catálogo${resp.status}","error",3000 );
-            return;
-          }
-
-          const data = await resp.json();
-
-          catalogImages = data.map((item) => {
-            return {
-              id: item.id_foto,
-              name: item.nombre,
-              description: item.descripcion || "",
-              imageUrl: normalizeImageUrl(item.url_imagen),
-              date: item.fecha_subida,
-              nombre_barber: item.nombre_barber,
-            };
-          });
-
-          renderCatalog();
-        } catch (err) {
-          console.error("Error de conexión al cargar catálogo", err);
-        }
-      }
       function renderMensajesBarbero() {
         const container = document.getElementById("messages-container-barber");
         container.innerHTML = "";
@@ -595,27 +475,27 @@
             : "";
 
           card.innerHTML = `
-          <div class="catalog-actions">
-            <button class="action-btn edit-btn" data-id="${
-              m.id_mensaje
-            }" title="Editar">
-              <i class="fa-solid fa-pen"></i>
-            </button>
-            <button class="action-btn delete-btn" data-id="${
-              m.id_mensaje
-            }" title="${"Borrar"}">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-          <div class="catalog-info">
-            <p class="catalog-description">${m.mensaje}</p>
-            <p class="catalog-date">
-              Tipo: ${m.tipo} ${fecha ? " · " + fecha : ""} ${
+      <div class="catalog-actions">
+        <button class="action-btn edit-btn" data-id="${
+          m.id_mensaje
+        }" title="Editar">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="action-btn delete-btn" data-id="${
+          m.id_mensaje
+        }" title="${"Borrar"}">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+      <div class="catalog-info">
+        <p class="catalog-description">${m.mensaje}</p>
+        <p class="catalog-date">
+          Tipo: ${m.tipo} ${fecha ? " · " + fecha : ""} ${
             m.activo ? "" : " · (inactivo)"
           }
-            </p>
-          </div>
-        `;
+        </p>
+      </div>
+    `;
 
           card
             .querySelector(".edit-btn")
@@ -654,7 +534,7 @@
             const tipo = document.getElementById("message-type").value;
 
             if (!text) {
-              await showToast("El mensaje no puede estar vacío.", "info", 3000);
+              alert("El mensaje no puede estar vacío.");
               return;
             }
 
@@ -685,11 +565,7 @@
               const data = await resp.json();
 
               if (!resp.ok) {
-                await showToast(
-                  data.error || "Error al guardar el mensaje",
-                  "error",
-                  3000
-                );
+                alert(data.error || "Error al guardar el mensaje");
                 return;
               }
 
@@ -697,11 +573,7 @@
               closeModalMensaje();
             } catch (err) {
               console.error("Error guardando mensaje:", err);
-              await showToast(
-                "Error de conexión al guardar el mensaje",
-                "error",
-                3000
-              );
+              alert("Error de conexión al guardar el mensaje");
             }
           });
         }
@@ -746,22 +618,14 @@
 
             const data = await resp.json();
             if (!resp.ok) {
-              await showToast(
-                data.error || "Error al actualizar el estado del mensaje",
-                "error",
-                3000
-              );
+              alert(data.error || "Error al actualizar el estado del mensaje");
               return;
             }
 
             await loadMensajesBarbero();
           } catch (err) {
             console.error("Error cambiando estado mensaje:", err);
-            await showToast(
-              "Error de conexión al actualizar el mensaje",
-              "error",
-              3000
-            );
+            alert("Error de conexión al actualizar el mensaje");
           }
         };
       }
@@ -777,7 +641,7 @@
 
       function saveWelcomeDescription(newText) {
         if (!newText || newText.trim() === "") {
-          showToast("La descripción no puede estar vacía.", "info", 3000);
+          alert("La descripción no puede estar vacía.");
           return false;
         }
 
@@ -826,7 +690,7 @@
             id: item.id_foto,
             name: item.nombre,
             description: item.descripcion || "",
-            imageUrl: `http://localhost:4000${item.url_imagen}`,
+            imageUrl: `${API_BASE_URL}${item.url_imagen}`,
             date: item.fecha_subida,
             nombre_barber: item.nombre_barber,
           }));
@@ -929,7 +793,7 @@
             if (textarea && p) {
               const newText = textarea.value.trim();
               if (!newText) {
-                showToast("La descripción no puede estar vacía.", "info", 3000);
+                alert("La descripción no puede estar vacía.");
                 return;
               }
               p.textContent = newText; // solo se guarda en front por ahora
@@ -1014,28 +878,26 @@
             });
 
         card.innerHTML = `
-        <div class="catalog-actions">
-          <button class="action-btn edit-btn" data-id="${
-            image.id
-          }" title="Editar">
-            <i class="fa-solid fa-pen"></i>
-          </button>
-          <button class="action-btn delete-btn" data-id="${
-            image.id
-          }" title="Eliminar">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
-        <img src="${image.imageUrl}" alt="${image.name}" class="catalog-image">
-        <div class="catalog-info">
-          <h3 class="catalog-name">${image.name}</h3>
-          <p class="catalog-description">${image.description}</p>
-          <p class="catalog-barber">Barbero: ${image.nombre_barber}</p>
-          <p class="catalog-date">${
-            formattedDate ? "Agregado: " + formattedDate : ""
-          }</p>
-        </div>
-      `;
+    <div class="catalog-actions">
+      <button class="action-btn edit-btn" data-id="${image.id}" title="Editar">
+        <i class="fa-solid fa-pen"></i>
+      </button>
+      <button class="action-btn delete-btn" data-id="${
+        image.id
+      }" title="Eliminar">
+        <i class="fa-solid fa-trash"></i>
+      </button> 
+    </div>
+    <img src="${image.imageUrl}" alt="${image.name}" class="catalog-image">
+    <div class="catalog-info">
+      <h3 class="catalog-name">${image.name}</h3>
+      <p class="catalog-description">${image.description}</p>
+      <p class="catalog-barber">Barbero: ${image.nombre_barber}</p>
+      <p class="catalog-date">${
+        formattedDate ? "Agregado: " + formattedDate : ""
+      }</p>
+    </div>
+  `;
 
         const editBtn = card.querySelector(".edit-btn");
         const deleteBtn = card.querySelector(".delete-btn");
@@ -1134,12 +996,12 @@
         const fileInput = document.getElementById("image-file");
 
         if (!name || !description) {
-          await showToast("Por favor, completa todos los campos", "info", 3000);
+          alert("Por favor, completa todos los campos");
           return;
         }
 
         if (!fileInput.files[0]) {
-          await showToast("Por favor, selecciona una imagen", "info", 3000);
+          alert("Por favor, selecciona una imagen");
           return;
         }
 
@@ -1173,11 +1035,7 @@
           const data = await resp.json();
 
           if (!resp.ok) {
-            await showToast(
-              data.error || "Error al subir la imagen",
-              "error",
-              3000
-            );
+            alert(data.error || "Error al subir la imagen");
             return;
           }
 
@@ -1185,11 +1043,7 @@
           closeUploadModal();
         } catch (err) {
           console.error("Error al subir imagen", err);
-          await showToast(
-            "Error de conexión al subir la imagen",
-            "error",
-            3000
-          );
+          alert("Error de conexión al subir la imagen");
         }
       }
 
@@ -1202,7 +1056,7 @@
         const fileInput = document.getElementById("image-file");
 
         if (!name || !description) {
-          await showToast("Por favor, completa todos los campos", "info", 3000);
+          alert("Por favor, completa todos los campos");
           return;
         }
 
@@ -1242,11 +1096,7 @@
           const data = await resp.json();
 
           if (!resp.ok) {
-            await showToast(
-              data.error || "Error al actualizar la imagen",
-              "error",
-              3000
-            );
+            alert(data.error || "Error al actualizar la imagen");
             return;
           }
 
@@ -1255,11 +1105,7 @@
           closeUploadModal();
         } catch (err) {
           console.error("Error al actualizar imagen", err);
-          await showToast(
-            "Error de conexión al actualizar la imagen",
-            "error",
-            3000
-          );
+          alert("Error de conexión al actualizar la imagen");
         }
       }
 
@@ -1292,23 +1138,11 @@
 
           if (!resp.ok) {
             if (resp.status === 404) {
-              await showToast(
-                data.error || "Imagen no encontrada",
-                "info",
-                3000
-              );
+              alert(data.error || "Imagen no encontrada");
             } else if (resp.status === 401) {
-              await showToast(
-                "Sesión expirada. Vuelve a iniciar sesión.",
-                "info",
-                3000
-              );
+              alert("Sesión expirada. Vuelve a iniciar sesión.");
             } else {
-              await showToast(
-                data.error || "Error al eliminar la imagen en el servidor",
-                "error",
-                3000
-              );
+              alert(data.error || "Error al eliminar la imagen en el servidor");
             }
             // IMPORTANTE: NO tocamos catalogImages ni renderCatalog aquí
             return;
@@ -1323,13 +1157,11 @@
           renderCatalog();
           closeDeleteModal();
 
-          await showToast("Trabajo eliminado con éxito", "success", 3000);
+          alert("Trabajo eliminado con éxito");
         } catch (err) {
-          await showToast(
-            "Error de conexión al eliminar el trabajo",
-            "error",
-            3000
-          );
+          console.error("Error de conexión al eliminar imagen:", err);
+          // Aquí NO tocamos catalogImages ni renderCatalog
+          alert("Error de conexión al eliminar el trabajo");
         } finally {
           itemToDelete = null;
         }
