@@ -439,7 +439,7 @@
     updateDisplay(user);
   }
 
- function updateDisplay(user) {
+  function updateDisplay(user) {
         const nombreCompleto = `${user.nombre || ""} ${user.apellidoP || ""} ${
           user.apellidoM || ""
         }`.trim();
@@ -453,10 +453,8 @@
           user.id_usuario || "-";
 
         const fotoUrl =
-          user.foto_perfil || "/barberpi/images/default-avatar.jpg";
-        const fotoCompleta = fotoUrl.startsWith("http")
-          ? fotoUrl
-          : `http://localhost:4000${fotoUrl}`;
+          user.foto_perfil || "/images/default-avatar.jpg";
+        const fotoCompleta =  fotoUrl;
 
         document.getElementById("profile-picture").src = fotoCompleta;
         document.getElementById("photo-preview").src = fotoCompleta;
@@ -482,12 +480,9 @@
         document.getElementById("photo-file-input").value = "";
 
         const fotoActual =
-          currentUser.foto_perfil || "/barberpi/images/default-avatar.jpg";
-        const fotoCompleta = fotoActual.startsWith("http")
-          ? fotoActual
-          : `http://localhost:4000${fotoActual}`;
+          currentUser.foto_perfil || "/images/default-avatar.jpg";
+        const fotoCompleta = fotoActual;
         document.getElementById("photo-preview").src = fotoCompleta;
-      }
 
   function closePhotoModal() {
     document.getElementById("photo-modal").style.display = "none";
