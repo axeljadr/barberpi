@@ -1,28 +1,37 @@
-<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Crear Cuenta - BarberPi</title>
     <link rel="stylesheet" href="/static/newaccount.css" />
-   <link rel="stylesheet" href="/static/alerts.css" />
+    <link rel="stylesheet" href="/static/alerts.css" />
   </head>
   <body>
-    <!-- Notification root -->
+    <!-- Notification root required por notifyHelpers -->
     <div id="app-notify-root">
       <div id="app-toast-container" class="toast-container"></div>
       <div id="app-modal-container"></div>
     </div>
 
     <div class="container">
-      <h1>Ivan Barber</h1>
+      <h1>ivan barber</h1>
       <h2>Crear Nueva Cuenta</h2>
 
-      <form id="formRegistro" novalidate>
-        <input type="text" id="nombre" name="nombre" placeholder="Nombre completo" required />
-        <input type="email" id="email" name="email" placeholder="Email" required />
-        <input type="password" id="contraseña" name="contraseña" placeholder="Contraseña" required />
-        <button id="submitBtn" type="submit">Crear cuenta</button>
+      <form id="formRegistro">
+        <input
+          type="text"
+          name="nombre"
+          placeholder="Nombre completo"
+          required
+        />
+        <input type="email" name="email" placeholder="Email" required />
+        <input
+          type="password"
+          name="contraseña"
+          placeholder="Contraseña"
+          required
+        />
+        <button type="submit">Crear cuenta</button>
       </form>
 
       <div class="link">
@@ -59,7 +68,6 @@
             };
             closeBtn.addEventListener("click", cleanup);
             toastContainer.appendChild(wrap);
-            void wrap.offsetWidth;
             setTimeout(cleanup, timeout || 3500);
           });
         };
@@ -102,89 +110,65 @@
     </script>
 
     <script>
+      // API_BASE para localhost y producción (Render u otro host)
       const API_BASE = (function () {
         const host = window.location.hostname;
         if (host.includes("localhost") || host === "127.0.0.1") {
           return "http://localhost:4000/api";
         }
+        // En producción usa el mismo origen + /api para que coincida con app.post("/api/auth/registro")
         return `${window.location.origin}/api`;
       })();
 
       const form = document.getElementById("formRegistro");
-      const submitBtn = document.getElementById("submitBtn");
-
-      function setLoading(loading) {
-        if (loading) {
-          submitBtn.classList.add("btn-loading");
-          submitBtn.textContent = "Enviando...";
-          submitBtn.disabled = true;
-        } else {
-          submitBtn.classList.remove("btn-loading");
-          submitBtn.textContent = "Crear cuenta";
-          submitBtn.disabled = false;
-        }
-      }
 
       form.addEventListener("submit", async (e) => {
-        e.preventDefault();
+        e.preventDefault(); // evita recargar la página
 
-        const nombre = document.getElementById("nombre").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const contraseña = document.getElementById("contraseña").value;
+        // Obtener los valores del formulario
+        const nombre = form.nombre.value.trim();
+        const email = form.email.value.trim();
+        const contraseña = form.contraseña.value.trim();
 
-        // Validaciones cliente
+        // Validaciones rápidas en frontend
         if (!nombre || !email || !contraseña) {
           await showToast("Por favor completa todos los campos.", "error", 3000);
           return;
         }
+
         if (contraseña.length < 8) {
           await showToast("La contraseña debe tener al menos 8 caracteres.", "error", 3000);
           return;
         }
 
-        setLoading(true);
-
         try {
-          const payload = { nombre, email, password: contraseña };
-
-          const resp = await fetch(`${API_BASE}/auth/registro`, {
+          // Enviar datos al backend usando API_BASE
+          const response = await fetch(`${API_BASE}/auth/registro`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ nombre, email, contraseña }),
           });
 
           let data = {};
           try {
-            data = await resp.json();
+            data = await response.json();
           } catch (err) {
             data = {};
           }
 
-          if (resp.ok) {
-            if (data.token) {
-              localStorage.setItem("token", data.token);
-              if (data.rol) localStorage.setItem("rol", data.rol);
-              if (data.id_usuario) localStorage.setItem("user_id", data.id_usuario);
-              await showToast(data.mensaje || "Cuenta creada correctamente. Redirigiendo...", "success", 1600);
-              setTimeout(() => {
-                window.location.href = "/"; 
-              }, 1200);
-              return;
-            }
+          if (response.ok) {
+            await showToast(data.mensaje || "Cuenta creada correctamente", "success", 2000);
 
-            await showToast(data.mensaje || "Cuenta creada correctamente. Ve a iniciar sesión.", "success", 1600);
+            // Redirigir al login luego de 2 segundos
             setTimeout(() => {
               window.location.href = "login.html";
-            }, 1200);
+            }, 2000);
           } else {
-            const msg = data.error || data.message || `Error: ${resp.status} ${resp.statusText}`;
-            await showToast(msg, "error", 3500);
+            await showToast(data.error || data.message || `Error: ${response.status}`, "error", 3500);
           }
         } catch (err) {
-          console.error("Error al comunicarse con el servidor:", err);
-          await showToast("Error de conexión con el servidor. Intenta de nuevo.", "error", 3000);
-        } finally {
-          setLoading(false);
+          console.error("Error:", err);
+          await showToast("Error de conexión con el servidor", "error", 3000);
         }
       });
     </script>
