@@ -183,64 +183,41 @@ app.get("/clientes", (req, res) => {
 });
 
 app.post("/api/auth/registro", async (req, res) => {
+  const { nombre, email, contraseña } = req.body;
+
+  if (!nombre || !email || !contraseña) {
+    return res.status(400).json({ error: "Faltan datos obligatorios" });
+  }
+
   try {
-    let { nombre, email } = req.body;
-    const rawPassword = req.body.password ?? req.body.contraseña;
-
-    if (!nombre || !email || !rawPassword) {
-      return res.status(400).json({ error: "Faltan datos obligatorios" });
-    }
-
-    nombre = String(nombre).trim();
-    email = String(email).trim().toLowerCase();
-
-    if (rawPassword.length < 8) {
-      return res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres" });
-    }
-
     const pool = await conectarDB();
 
     const existe = await pool
       .request()
-      .input("email", mssql.NVarChar(255), email)
-      .query("SELECT id FROM usuarios WHERE LOWER(email) = LOWER(@email)");
+      .input("email", mssql.NVarChar, email)
+      .query("SELECT * FROM usuarios WHERE email = @email");
 
     if (existe.recordset.length > 0) {
       return res.status(400).json({ error: "El email ya está registrado" });
     }
 
-    const hashed = await bcrypt.hash(rawPassword, 10);
+    const hashed = await bcrypt.hash(contraseña, 10);
 
-    const insertResult = await pool
+    await pool
       .request()
-      .input("nombre", mssql.NVarChar(255), nombre)
-      .input("email", mssql.NVarChar(255), email)
-      .input("contraseña", mssql.NVarChar(255), hashed)
+      .input("nombre", mssql.NVarChar, nombre)
+      .input("email", mssql.NVarChar, email)
+      .input("contraseña", mssql.NVarChar, hashed)
       .query(
-        `INSERT INTO usuarios (nombre, email, contraseña)
-         OUTPUT INSERTED.id, INSERTED.email
-         VALUES (@nombre, @email, @contraseña)`
+        "INSERT INTO usuarios (nombre, email, contraseña) VALUES (@nombre, @email, @contraseña)"
       );
 
-    const inserted = insertResult.recordset && insertResult.recordset[0];
-    const userId = inserted ? inserted.id : null;
-
-    let token = null;
-    if (SECRET && userId) {
-      token = jwt.sign({ id: userId, email }, SECRET, { expiresIn: "7d" });
-    }
-
-    return res.status(201).json({
-      mensaje: "Usuario registrado correctamente",
-      id_usuario: userId,
-      token,
-    });
+    res.json({ mensaje: "Usuario registrado correctamente" });
   } catch (error) {
     console.error("Error en /registro:", error);
-    return res.status(500).json({ error: "Error interno del servidor" });
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-
 app.post("/api/auth/login", async (req, res) => {
   const { email, contraseña } = req.body;
 
