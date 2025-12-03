@@ -252,6 +252,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+
 app.get("/api/auth/perfil", verificarToken, async (req, res) => {
   try {
     const pool = await conectarDB();
@@ -336,10 +337,8 @@ app.put(
     if (!req.file) {
       return res.status(400).json({ error: "No se recibió ninguna imagen" });
     }
-    const protocolo = req.protocol;
-    const host = req.get("host");
-    const url_foto = `${protocolo}://${host}/uploads/fotosdeperfil/${req.file.filename}`;
 
+    const url_foto = `/uploads/fotosdeperfil/${req.file.filename}`;
 
     try {
       const pool = await conectarDB();
@@ -479,7 +478,233 @@ app.post(
     }
   }
 );
+app.get("/api/catalogo/mis-trabajos", verificarToken, async (req, res) => {
+  if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
+    return res
+      .status(403)
+      .json({ error: "Solo barberos y admins pueden ver este catálogo" });
+  }
 
+  try {
+    const pool = await conectarDB();
+
+    const usuarioResult = await pool
+      .request()
+      .input("id_usuario", mssql.Int, req.usuario.id).query(`
+        SELECT nombre 
+        FROM usuarios 
+        WHERE id_usuario = @id_usuario
+      `);
+
+    let query;
+    const request = pool.request();
+    query = `
+        SELECT 
+          ic.id_foto,
+          ic.nombre,
+          ic.url_imagen,
+          ic.descripcion,
+          ic.nombre_barber,
+          ic.fecha_subida
+        FROM ImagenCatalogo ic
+        ORDER BY ic.fecha_subida DESC
+      `;
+    const result = await request.query(query);
+    res.json(result.recordset);
+  } catch (error) {
+    console.error("Error al obtener catálogo:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+app.put(
+  "/api/catalogo/:id_foto",
+  verificarToken,
+  upload.single("imagen"),
+  async (req, res) => {
+    if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
+      return res
+        .status(403)
+        .json({ error: "Solo barberos y admins pueden actualizar imágenes" });
+    }
+
+    const { id_foto } = req.params;
+    const { nombre, descripcion, nombre_barber_ref } = req.body;
+
+    if (!nombre || !descripcion) {
+      return res
+        .status(400)
+        .json({ error: "Nombre y descripción son obligatorios" });
+    }
+
+    try {
+      const pool = await conectarDB();
+
+      const usuarioResult = await pool
+        .request()
+        .input("id_usuario", mssql.Int, req.usuario.id).query(`
+          SELECT nombre 
+          FROM usuarios 
+          WHERE id_usuario = @id_usuario
+        `);
+
+      const nombreUsuario =
+        usuarioResult.recordset.length > 0
+          ? usuarioResult.recordset[0].nombre
+          : null;
+
+      const check = await pool.request().input("id_foto", mssql.Int, id_foto)
+        .query(`
+          SELECT nombre_barber, url_imagen
+          FROM ImagenCatalogo
+          WHERE id_foto = @id_foto
+        `);
+
+      if (check.recordset.length === 0) {
+        return res.status(404).json({ error: "Imagen no encontrada" });
+      }
+
+      const registro = check.recordset[0];
+
+      if (
+        req.usuario.rol === "barbero" &&
+        registro.nombre_barber !== nombreUsuario
+      ) {
+        return res.status(403).json({
+          error: "No estás autorizado para editar este trabajo",
+        });
+      }
+
+      let nombre_barber = registro.nombre_barber;
+
+      if (req.usuario.rol === "barbero") {
+        nombre_barber = nombreUsuario;
+      } else if (req.usuario.rol === "admin") {
+        if (nombre_barber_ref && nombre_barber_ref.trim() !== "") {
+          nombre_barber = nombre_barber_ref.trim();
+        }
+      }
+
+      let nuevaUrlImagen = registro.url_imagen;
+      if (req.file) {
+        nuevaUrlImagen = `/uploads/${req.file.filename}`;
+
+        try {
+          const filePath = path.join(
+            __dirname,
+            registro.url_imagen.replace("/uploads/", "uploads/")
+          );
+          fs.unlink(filePath, (err) => {
+            if (err)
+              console.warn("No se pudo borrar archivo anterior:", err.message);
+          });
+        } catch (e) {
+          console.warn("Error al intentar eliminar archivo anterior:", e);
+        }
+      }
+
+      await pool
+        .request()
+        .input("id_foto", mssql.Int, id_foto)
+        .input("nombre", mssql.NVarChar(100), nombre)
+        .input("url_imagen", mssql.VarChar, nuevaUrlImagen)
+        .input("descripcion", mssql.Text, descripcion)
+        .input("nombre_barber", mssql.NVarChar(100), nombre_barber).query(`
+          UPDATE ImagenCatalogo
+          SET nombre = @nombre,
+              url_imagen = @url_imagen,
+              descripcion = @descripcion,
+              nombre_barber = @nombre_barber
+          WHERE id_foto = @id_foto
+        `);
+
+      res.json({
+        mensaje: "Trabajo actualizado correctamente",
+        imagen: {
+          id_foto,
+          nombre,
+          url_imagen: nuevaUrlImagen,
+          descripcion,
+          nombre_barber,
+        },
+      });
+    } catch (error) {
+      console.error("Error al actualizar imagen:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  }
+);
+app.delete("/api/catalogo/:id_foto", verificarToken, async (req, res) => {
+  if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
+    return res
+      .status(403)
+      .json({ error: "Solo barberos y admins pueden eliminar imágenes" });
+  }
+
+  const { id_foto } = req.params;
+
+  try {
+    const pool = await conectarDB();
+
+    const usuarioResult = await pool
+      .request()
+      .input("id_usuario", mssql.Int, req.usuario.id).query(`
+        SELECT nombre 
+        FROM usuarios 
+        WHERE id_usuario = @id_usuario
+      `);
+
+    const nombreUsuario =
+      usuarioResult.recordset.length > 0
+        ? usuarioResult.recordset[0].nombre
+        : null;
+
+    const check = await pool.request().input("id_foto", mssql.Int, id_foto)
+      .query(`
+        SELECT nombre_barber, url_imagen 
+        FROM ImagenCatalogo 
+        WHERE id_foto = @id_foto
+      `);
+
+    if (check.recordset.length === 0) {
+      return res.status(404).json({ error: "Imagen no encontrada" });
+    }
+
+    const registro = check.recordset[0];
+
+    if (
+      req.usuario.rol === "barbero" &&
+      registro.nombre_barber !== nombreUsuario
+    ) {
+      return res.status(403).json({
+        error: "No estás autorizado para eliminar este trabajo",
+      });
+    }
+
+    const url_imagen = registro.url_imagen;
+
+    await pool
+      .request()
+      .input("id_foto", mssql.Int, id_foto)
+      .query(`DELETE FROM ImagenCatalogo WHERE id_foto = @id_foto`);
+
+    try {
+      const filePath = path.join(
+        __dirname,
+        url_imagen.replace("/uploads/", "uploads/")
+      );
+      fs.unlink(filePath, (err) => {
+        if (err) console.warn("No se pudo borrar archivo:", err.message);
+      });
+    } catch (e) {
+      console.warn("Error al borrar archivo:", e);
+    }
+
+    res.json({ mensaje: "Imagen eliminada correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar imagen:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
 app.post("/api/mensajes", verificarToken, async (req, res) => {
   if (req.usuario.rol !== "barbero" && req.usuario.rol !== "admin") {
     return res
