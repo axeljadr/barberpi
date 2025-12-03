@@ -1,228 +1,627 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Clientes Barbería - Gestión</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    input[type="search"] { padding: 8px; width: 300px; margin-bottom: 10px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f4f4f4; }
-    tr:hover { background-color: #f1f1f1; }
-    button { padding: 6px 12px; margin: 2px; cursor: pointer; }
-    .btn-primary { background-color: #007bff; color: white; border: none; }
-    .btn-danger { background-color: #dc3545; color: white; border: none; }
-    .btn-secondary { background-color: #6c757d; color: white; border: none; }
-    #profile-modal { 
-      display: none; 
-      position: fixed; 
-      top: 0; left: 0; right: 0; bottom: 0; 
-      background: rgba(0,0,0,0.5); 
-      justify-content: center; 
-      align-items: center; 
-    }
-    #profile-modal .modal-content {
-      background: white; 
-      padding: 20px; 
-      border-radius: 6px; 
-      width: 400px;
-      max-height: 80vh;
-      overflow-y: auto;
-      position: relative;
-    }
-    #profile-modal .close-btn {
-      position: absolute;
-      top: 10px; right: 10px;
-      background: transparent;
-      border: none;
-      font-size: 20px;
-      cursor: pointer;
-    }
-    label { font-weight: bold; display: block; margin-top: 10px; }
-    input, select { width: 100%; padding: 6px; margin-top: 4px; }
-  </style>
-</head>
-<body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Clientes - BarberPi</title>
 
-  <h1>Gestión de Clientes</h1>
+    <link rel="stylesheet" href="/static/barbera.css" />
+    <link rel="stylesheet" href="/static/clientes.css" />
 
-  <input type="search" id="searchInput" placeholder="Buscar clientes por nombre, email o teléfono..." />
+  </head>
+  <body>
+    <header class="header">
+      <div class="block">
+        <img
+          class="imagen-de-barberia"
+          src="/images/barber.jpg"
+          alt="Logo Barber Studio"
+        />
+      </div>
+      <nav class="navigation-pill-list" aria-label="Navegación principal">
+        <a href="/perfil" class="navigation-pill">
+          <span class="title">Mi Perfil</span>
+        </a>
+        <a href="/homebarber" class="navigation-pill">
+          <span class="title">Inicio</span>
+        </a>
+        <a href="/barber_agenda" class="navigation-pill">
+          <span class="">Agenda</span>
+        </a>
+        <a href="/notibarbero" class="navigation-pill">
+          <span class="title">Notificaciones</span>
+        </a>
+        <a href="/" class="navigation-pill">
+          <span class="title">Cerrar Sesión</span>
+        </a>
+      </nav>
+    </header>
 
-  <table id="clientesTable">
-    <thead>
-      <tr>
-        <th>Nombre Completo</th>
-        <th>Teléfono</th>
-        <th>Email</th>
-        <th>Fecha Registro</th>
-        <th>Citas Completadas</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Filas generadas dinámicamente -->
-    </tbody>
-  </table>
+    <!-- === Main: sección de tabla (está separada y limpia) === -->
+    <main class="main-content" id="clients-app" data-module="clients">
+      <div class="panel-header">
+        <h1 class="panel-title">Clientes</h1>
 
-  <!-- Modal perfil cliente -->
-  <div id="profile-modal">
-    <div class="modal-content">
-      <button class="close-btn" id="closeProfileBtn">&times;</button>
-      <h2>Perfil del Cliente</h2>
-      <div id="profileContent">
-        <!-- Datos cargados dinámicamente -->
+        <div class="panel-actions" role="group" aria-label="Acciones">
+          <button id="btn-create" class="btn btn-primary" type="button">
+            + Nuevo
+          </button>
+          <button id="btn-refresh" class="btn btn-secondary" type="button">
+            Actualizar
+          </button>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <div class="search-container">
+          <label for="search" class="visually-hidden">Buscar clientes</label>
+          <input
+            id="search"
+            class="search-input"
+            type="search"
+            placeholder="Buscar por nombre, email o teléfono"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="pagination-controls">
+          <label for="pageSize" class="visually-hidden"
+            >Elementos por página</label
+          >
+          <select
+            id="pageSize"
+            class="select"
+            aria-label="Elementos por página"
+          >
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+
+      <section class="stats-container" aria-hidden="false">
+        <div class="stat-card">
+          <div class="stat-number" id="stat-total">—</div>
+          <div class="stat-label">clientes totales</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-with-citas">—</div>
+          <div class="stat-label">clientes con citas completadas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-avg-citas">—</div>
+          <div class="stat-label">promedio citas completadas</div>
+        </div>
+      </section>
+
+      <section class="clients-table" aria-labelledby="clients-table-heading">
+        <h2 id="clients-table-heading" class="visually-hidden">
+          Tabla de clientes
+        </h2>
+        <table class="table" id="clients-table" aria-describedby="table-desc">
+          <caption id="table-desc" class="visually-hidden">
+            Lista de clientes con teléfono, email, fecha de registro y número de
+            citas completadas
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Nombre completo</th>
+              <th scope="col">Teléfono</th>
+              <th scope="col">Email</th>
+              <th scope="col">Fecha registro</th>
+              <th scope="col" style="text-align: center">Citas completadas</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="clients-tbody">
+            <tr>
+              <td colspan="6" class="empty">Cargando...</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="pager">
+        <div id="pager-info" class="pager-info" aria-live="polite"></div>
+        <div class="pager-buttons">
+          <button id="prev" class="btn btn-secondary">Anterior</button>
+          <button id="next" class="btn btn-secondary">Siguiente</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- === Modal Perfil (sin estilos inline) === -->
+    <div
+      id="profile-modal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profile-title"
+      hidden
+    >
+      <div class="modal-content">
+        <header class="modal-header">
+          <h3 id="profile-title" class="modal-title">Perfil</h3>
+          <button id="close-profile" class="close-modal" aria-label="Cerrar">
+            &times;
+          </button>
+        </header>
+        <div id="profile-body" class="profile-body" tabindex="0">
+          <!-- contenido cargado por JS -->
+        </div>
+        <footer class="modal-footer">
+          <button id="open-profile-template" class="btn btn-secondary">
+            Generar plantilla
+          </button>
+          <button id="close-profile-2" class="btn btn-primary">Cerrar</button>
+        </footer>
       </div>
     </div>
-  </div>
 
-  <script>
-    const API_BASE = (window.location.hostname.includes("localhost") || window.location.hostname === "127.0.0.1")
-      ? "http://localhost:4000/api"
-      : `${window.location.origin}/api`;
+    <!-- === Footer (NO MODIFICAR) === -->
+    <footer class="footer">
+      <div class="footer-logo">
+        <img
+          class="imagen-de-barberia"
+          src="/images/barber.jpg"
+          alt="Barber Studio Logo"
+        />
+      </div>
+      <nav class="text-link-list" aria-labelledby="footer-contact">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-contact" class="text-strong">
+            <span class="text-strong-2">contacto</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a href="tel:9837324637" class="list-item">9837324637</a>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:barberpi@utttn.mx" class="list-item-2"
+              >barberpi@uttn.mx</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-location">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-location" class="text-strong">
+            <span class="text-strong-2">ubicación</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <a
+              href="https://maps.app.goo.gl/ZD5gur5vPiwKMVCW9?g_st=iw"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="list-item-7"
+              >google.maps/micasa</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <nav class="text-link-list" aria-labelledby="footer-creator">
+        <div class="text-strong-wrapper">
+          <h2 id="footer-creator" class="text-strong">
+            <span class="">creado por:</span>
+          </h2>
+        </div>
+        <ul class="footer-list">
+          <li class="text-link-list-item">
+            <span class="list-item-11">Axel Rivera</span>
+          </li>
+          <li class="text-link-list-item">
+            <span class="list-item-12">contactos:</span>
+          </li>
+          <li class="text-link-list-item">
+            <a href="mailto:axel.delgado@uttn.mx" class="list-item-13"
+              >axel.delgado@uttn.mx</a
+            >
+          </li>
+          <li class="text-link-list-item">
+            <a href="tel:8994287620" class="list-item">8994287620</a>
+          </li>
+        </ul>
+      </nav>
+    </footer>
 
-    // Simula token admin para llamadas autorizadas
-    const token = localStorage.getItem("token") || "";
+    <!-- JS (separado, modular) -->
+    <script>
+      (function () {
+        const API_BASE =
+          window.location.hostname.includes("localhost") ||
+          window.location.hostname === "127.0.0.1"
+            ? "http://localhost:4000/api"
+            : `${window.location.origin}/api`;
 
-    // Referencias DOM
-    const tableBody = document.querySelector("#clientesTable tbody");
-    const searchInput = document.getElementById("searchInput");
-    const profileModal = document.getElementById("profile-modal");
-    const profileContent = document.getElementById("profileContent");
-    const closeProfileBtn = document.getElementById("closeProfileBtn");
+        // elemento raíz
+        const el = {
+          search: document.getElementById("search"),
+          pageSize: document.getElementById("pageSize"),
+          tbody: document.getElementById("clients-tbody"),
+          prev: document.getElementById("prev"),
+          next: document.getElementById("next"),
+          pagerInfo: document.getElementById("pager-info"),
+          statTotal: document.getElementById("stat-total"),
+          statWithCitas: document.getElementById("stat-with-citas"),
+          statAvgCitas: document.getElementById("stat-avg-citas"),
+          btnRefresh: document.getElementById("btn-refresh"),
+          btnCreate: document.getElementById("btn-create"),
+          profileModal: document.getElementById("profile-modal"),
+          profileBody: document.getElementById("profile-body"),
+          closeProfile: document.getElementById("close-profile"),
+          closeProfile2:
+            document.getElementById("close-profile-2") ||
+            document.getElementById("close-profile"),
+          openProfileTemplateBtn: document.getElementById(
+            "open-profile-template"
+          ),
+        };
 
-    let clientes = []; // datos cargados
+        // estado
+        const state = {
+          page: 1,
+          pageSize: parseInt(el.pageSize.value, 10) || 25,
+          total: 0,
+          rows: [],
+        };
 
-    // Carga inicial de clientes con conteo de citas completadas
-    async function cargarClientes() {
-      try {
-        // Traemos clientes con conteo de citas completadas (query backend debe soportar esto)
-        const resp = await fetch(`${API_BASE}/clientes-con-citas`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!resp.ok) throw new Error("Error al cargar clientes");
-        clientes = await resp.json();
-        mostrarClientes(clientes);
-      } catch (err) {
-        alert("Error al cargar clientes: " + err.message);
-      }
-    }
+        // helpers
+        function showToastFallback(msg, type = "info") {
+          if (window.showToast) return window.showToast(msg, type, 3000);
+          // fallback minimal
+          alert(msg);
+          return Promise.resolve();
+        }
 
-    // Renderiza tabla con filtro opcional
-    function mostrarClientes(lista) {
-      tableBody.innerHTML = "";
-      if (lista.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No se encontraron clientes</td></tr>`;
-        return;
-      }
-      lista.forEach(cliente => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${cliente.nombre} ${cliente.apellidoP || ""} ${cliente.apellidoM || ""}</td>
-          <td>${cliente.telefono || "-"}</td>
-          <td>${cliente.email}</td>
-          <td>${new Date(cliente.fecha_registro).toLocaleDateString()}</td>
-          <td style="text-align:center;">${cliente.citas_completadas || 0}</td>
-          <td>
-            <button class="btn btn-primary" data-id="${cliente.id_usuario}">Perfil</button>
-            <button class="btn btn-secondary" data-id="${cliente.id_usuario}">Editar</button>
-            <button class="btn btn-danger" data-id="${cliente.id_usuario}">Eliminar</button>
-          </td>
-        `;
-        tableBody.appendChild(tr);
-      });
-      // Añadir listeners a botones
-      tableBody.querySelectorAll("button").forEach(btn => {
-        btn.addEventListener("click", onTableButtonClick);
-      });
-    }
+        function escapeHtml(s) {
+          if (s == null) return "";
+          return String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        }
 
-    // Filtrar clientes por búsqueda
-    searchInput.addEventListener("input", () => {
-      const filtro = searchInput.value.toLowerCase();
-      const filtrados = clientes.filter(c =>
-        (c.nombre + " " + (c.apellidoP || "") + " " + (c.apellidoM || "")).toLowerCase().includes(filtro) ||
-        (c.email || "").toLowerCase().includes(filtro) ||
-        (c.telefono || "").toLowerCase().includes(filtro)
-      );
-      mostrarClientes(filtrados);
-    });
+        function debounce(fn, wait = 300) {
+          let t;
+          return (...args) => {
+            clearTimeout(t);
+            t = setTimeout(() => fn(...args), wait);
+          };
+        }
 
-    // Manejo de botones en tabla
-    async function onTableButtonClick(e) {
-      const id = e.target.dataset.id;
-      if (!id) return;
-      if (e.target.textContent === "Perfil") {
-        await mostrarPerfil(id);
-      } else if (e.target.textContent === "Editar") {
-        editarCliente(id);
-      } else if (e.target.textContent === "Eliminar") {
-        eliminarCliente(id);
-      }
-    }
+        // API wrapper: recibe path relativo (ej: '/tabla-clientes') y opciones
+        async function apiFetch(path, options = {}) {
+          const token = localStorage.getItem("token") || "";
+          const headers = Object.assign(
+            { "Content-Type": "application/json" },
+            options.headers || {}
+          );
+          if (token) headers.Authorization = `Bearer ${token}`;
 
-    // Mostrar modal perfil cliente
-    async function mostrarPerfil(id_usuario) {
-      try {
-        const resp = await fetch(`${API_BASE}/auth/perfil/${id_usuario}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!resp.ok) throw new Error("No se pudo cargar el perfil");
-        const perfil = await resp.json();
+          const resp = await fetch(
+            `${API_BASE}${path}`,
+            Object.assign({}, options, { headers })
+          );
+          if (!resp.ok) {
+            const contentType = resp.headers.get("Content-Type") || "";
+            let errText = `HTTP ${resp.status}`;
+            try {
+              if (contentType.includes("application/json")) {
+                const json = await resp.json();
+                errText = json.error || json.message || JSON.stringify(json);
+              } else {
+                errText = await resp.text();
+              }
+            } catch (e) {
+              // ignore parse errors
+            }
+            const err = new Error(errText || `HTTP ${resp.status}`);
+            err.status = resp.status;
+            throw err;
+          }
+          return resp.json().catch(() => ({}));
+        }
 
-        profileContent.innerHTML = `
-          <p><strong>Nombre:</strong> ${perfil.nombre} ${perfil.apellidoP || ""} ${perfil.apellidoM || ""}</p>
-          <p><strong>Edad:</strong> ${perfil.edad || "-"}</p>
-          <p><strong>Email:</strong> ${perfil.email}</p>
-          <p><strong>Teléfono:</strong> ${perfil.telefono || "-"}</p>
-          <p><strong>Rol:</strong> ${perfil.rol}</p>
-          ${perfil.foto_perfil ? `<img src="${perfil.foto_perfil}" alt="Foto perfil" style="max-width:100%;border-radius:8px;margin-top:10px;">` : ""}
-        `;
-        profileModal.style.display = "flex";
-      } catch (err) {
-        alert("Error al cargar perfil: " + err.message);
-      }
-    }
+        // render tabla a partir de rows
+        function renderTable(rows) {
+          state.rows = rows || [];
+          if (!rows || rows.length === 0) {
+            el.tbody.innerHTML =
+              '<tr><td colspan="6" class="empty">No se encontraron clientes</td></tr>';
+            return;
+          }
+          el.tbody.innerHTML = "";
+          const fragment = document.createDocumentFragment();
 
-    closeProfileBtn.addEventListener("click", () => {
-      profileModal.style.display = "none";
-    });
+          rows.forEach((r) => {
+            const tr = document.createElement("tr");
 
-    // Funciones CRUD básicas (simplificadas, debes adaptar a tu backend)
+            const nombre = `${r.nombre || ""} ${r.apellidoP || ""} ${
+              r.apellidoM || ""
+            }`.trim();
+            tr.innerHTML = `
+        <td>${escapeHtml(nombre)}</td>
+        <td>${escapeHtml(r.telefono || "-")}</td>
+        <td>${escapeHtml(r.email || "-")}</td>
+        <td>${
+          r.fecha_registro
+            ? new Date(r.fecha_registro).toLocaleDateString()
+            : "-"
+        }</td>
+        <td style="text-align:center;"><span class="badge badge-info">${
+          r.citas_completadas || 0
+        }</span></td>
+        <td>
+          <div class="action-buttons" role="group" aria-label="Acciones por cliente">
+            <button class="btn btn-primary action-profile" data-id="${
+              r.id_usuario
+            }" type="button">Perfil</button>
+            <button class="btn btn-secondary action-generate" data-id="${
+              r.id_usuario
+            }" type="button">Generar</button>
+            <button class="btn btn-secondary action-edit" data-id="${
+              r.id_usuario
+            }" type="button">Editar</button>
+            <button class="btn btn-danger action-delete" data-id="${
+              r.id_usuario
+            }" type="button">Eliminar</button>
+          </div>
+        </td>
+      `;
+            fragment.appendChild(tr);
+          });
 
-    // Editar cliente (ejemplo abre prompt para cambiar nombre)
-    function editarCliente(id_usuario) {
-      const cliente = clientes.find(c => c.id_usuario == id_usuario);
-      if (!cliente) return alert("Cliente no encontrado");
-      const nuevoNombre = prompt("Editar nombre completo:", cliente.nombre);
-      if (nuevoNombre && nuevoNombre.trim() !== "") {
-        // Aquí llamarías a tu API para actualizar
-        alert(`Se actualizaría el nombre a: ${nuevoNombre.trim()}`);
-        // Luego recarga o actualiza la tabla
-      }
-    }
+          el.tbody.appendChild(fragment);
+        }
 
-    // Eliminar cliente (confirmar y llamar API)
-    async function eliminarCliente(id_usuario) {
-      if (!confirm("¿Seguro que quieres eliminar este cliente? Esta acción no se puede deshacer.")) return;
-      try {
-        const resp = await fetch(`${API_BASE}/usuarios/${id_usuario}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!resp.ok) throw new Error("Error al eliminar cliente");
-        alert("Cliente eliminado correctamente");
-        // Recarga lista
-        await cargarClientes();
-      } catch (err) {
-        alert("Error al eliminar cliente: " + err.message);
-      }
-    }
+        function updateStats() {
+          el.statTotal.textContent = state.total || 0;
+          const withCitas = (state.rows || []).filter(
+            (r) => (r.citas_completadas || 0) > 0
+          ).length;
+          el.statWithCitas.textContent = withCitas;
+          const avg =
+            state.rows && state.rows.length
+              ? state.rows.reduce((s, r) => s + (r.citas_completadas || 0), 0) /
+                state.rows.length
+              : 0;
+          el.statAvgCitas.textContent = Math.round(avg * 10) / 10;
+        }
 
-    // Inicializar
-    cargarClientes();
-  </script>
+        function updatePagerInfo() {
+          const start = (state.page - 1) * state.pageSize + 1;
+          const end = Math.min(state.page * state.pageSize, state.total || 0);
+          el.pagerInfo.textContent = state.total
+            ? `Mostrando ${start}-${end} de ${state.total}`
+            : "";
+          el.prev.disabled = state.page <= 1;
+          el.next.disabled = state.page * state.pageSize >= (state.total || 0);
+        }
 
-</body>
+        // carga datos con parámetros de búsqueda/paginación
+        async function loadClients() {
+          const q = (el.search.value || "").trim();
+          state.pageSize = parseInt(el.pageSize.value, 10) || 25;
+
+          try {
+            el.tbody.innerHTML =
+              '<tr><td colspan="6" class="empty">Cargando...</td></tr>';
+            const params = new URLSearchParams({
+              q,
+              page: String(state.page),
+              pageSize: String(state.pageSize),
+            });
+            const data = await apiFetch(`/tabla-clientes?${params.toString()}`);
+            state.total = data.total || 0;
+            renderTable(data.rows || []);
+            updateStats();
+            updatePagerInfo();
+          } catch (err) {
+            el.tbody.innerHTML = `<tr><td colspan="6" class="empty">Error: ${escapeHtml(
+              err.message || String(err)
+            )}</td></tr>`;
+            console.error("loadClients error", err);
+            await showToastFallback("Error al cargar clientes", "error");
+          }
+        }
+
+        // event handlers (delegation)
+        function onTableClick(e) {
+          const btn = e.target.closest("button");
+          if (!btn) return;
+          const id = btn.dataset.id;
+          if (!id) return;
+
+          if (btn.matches(".action-profile")) {
+            openProfile(id);
+          } else if (btn.matches(".action-generate")) {
+            window.open(`/perfil_template/${id}`, "_blank");
+          } else if (btn.matches(".action-edit")) {
+            openEdit(id);
+          } else if (btn.matches(".action-delete")) {
+            confirmDelete(id);
+          }
+        }
+
+        // modal: profile
+        async function openProfile(id) {
+          try {
+            el.profileBody.innerHTML = "<p>Cargando...</p>";
+            el.profileModal.hidden = false;
+            el.profileModal.classList.add("open");
+
+            const profile = await apiFetch(`/auth/perfil/${id}`);
+            // render limpio y accesible
+            const fullName = `${profile.nombre || ""} ${
+              profile.apellidoP || ""
+            } ${profile.apellidoM || ""}`.trim();
+            el.profileBody.innerHTML = `
+        <div class="detail-row"><div class="detail-label">Nombre</div><div class="detail-value">${escapeHtml(
+          fullName
+        )}</div></div>
+        <div class="detail-row"><div class="detail-label">Email</div><div class="detail-value">${escapeHtml(
+          profile.email || "-"
+        )}</div></div>
+        <div class="detail-row"><div class="detail-label">Teléfono</div><div class="detail-value">${escapeHtml(
+          profile.telefono || "-"
+        )}</div></div>
+        <div class="detail-row"><div class="detail-label">Edad</div><div class="detail-value">${
+          profile.edad || "-"
+        }</div></div>
+        <div style="margin-top:12px;">
+          <button id="btn-open-profile-template" class="btn btn-secondary">Generar plantilla</button>
+        </div>
+      `;
+            const btnTemplate = document.getElementById(
+              "btn-open-profile-template"
+            );
+            if (btnTemplate)
+              btnTemplate.addEventListener("click", () =>
+                window.open(`/perfil_template/${id}`, "_blank")
+              );
+          } catch (err) {
+            el.profileBody.innerHTML = `<p class="empty">No se pudo cargar el perfil: ${escapeHtml(
+              err.message || String(err)
+            )}</p>`;
+            console.error("openProfile error", err);
+          }
+        }
+
+        function closeProfile() {
+          el.profileModal.hidden = true;
+          el.profileModal.classList.remove("open");
+          el.profileBody.innerHTML = "";
+        }
+
+        // edit/create (opens a native prompt for simplicity - you can replace with a proper modal form)
+        async function openEdit(id) {
+          try {
+            const profile = await apiFetch(`/auth/perfil/${id}`);
+            const nombre = prompt("Nombre", profile.nombre || "");
+            if (nombre == null) return; // cancelled
+            const telefono = prompt("Teléfono", profile.telefono || "");
+            if (telefono == null) return;
+            const payload = {
+              nombre: String(nombre).trim(),
+              telefono: String(telefono).trim(),
+            };
+            await apiFetch(`/usuarios/${id}`, {
+              method: "PUT",
+              body: JSON.stringify(payload),
+            });
+            await showToastFallback("Cliente actualizado", "success");
+            await loadClients();
+          } catch (err) {
+            console.error("openEdit error", err);
+            await showToastFallback("Error al actualizar cliente", "error");
+          }
+        }
+
+        async function confirmDelete(id) {
+          if (!confirm("¿Eliminar cliente? Esta acción es irreversible."))
+            return;
+          try {
+            await apiFetch(`/usuarios/${id}`, { method: "DELETE" });
+            await showToastFallback("Cliente eliminado", "success");
+            // reload current page
+            await loadClients();
+          } catch (err) {
+            console.error("confirmDelete error", err);
+            await showToastFallback("Error al eliminar cliente", "error");
+          }
+        }
+
+        // create (simple prompt)
+        async function createClient() {
+          try {
+            const nombre = prompt("Nombre completo del nuevo cliente");
+            if (!nombre) return;
+            const email = prompt("Email");
+            if (!email) return;
+            const telefono = prompt("Teléfono (opcional)") || null;
+
+            const payload = {
+              nombre: String(nombre).trim(),
+              email: String(email).trim(),
+              telefono,
+            };
+            await apiFetch("/usuarios", {
+              method: "POST",
+              body: JSON.stringify(payload),
+            });
+            await showToastFallback("Cliente creado", "success");
+            await loadClients();
+          } catch (err) {
+            console.error("createClient error", err);
+            await showToastFallback("Error al crear cliente", "error");
+          }
+        }
+
+        // init / events
+        function attachEvents() {
+          document
+            .getElementById("clients-table")
+            .addEventListener("click", onTableClick);
+          el.prev.addEventListener("click", () => {
+            if (state.page > 1) {
+              state.page--;
+              loadClients();
+            }
+          });
+          el.next.addEventListener("click", () => {
+            state.page++;
+            loadClients();
+          });
+          el.btnRefresh.addEventListener("click", () => loadClients());
+          el.btnCreate.addEventListener("click", () => createClient());
+          el.closeProfile.addEventListener("click", () => closeProfile());
+          if (el.closeProfile2)
+            el.closeProfile2.addEventListener("click", () => closeProfile());
+          el.openProfileTemplateBtn &&
+            el.openProfileTemplateBtn.addEventListener("click", () => {
+              // if modal has profile loaded, get an id from its content (or you can set a state.currentProfileId)
+            });
+
+          el.pageSize.addEventListener("change", () => {
+            state.page = 1;
+            loadClients();
+          });
+
+          // debounce search
+          el.search.addEventListener(
+            "input",
+            debounce(() => {
+              state.page = 1;
+              loadClients();
+            }, 350)
+          );
+
+          // close modal on esc
+          document.addEventListener("keydown", (ev) => {
+            if (ev.key === "Escape" && !el.profileModal.hidden) closeProfile();
+          });
+        }
+
+        // bootstrap
+        async function init() {
+          attachEvents();
+          await loadClients();
+        }
+
+        // start when DOM ready
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", init);
+        } else {
+          init();
+        }
+      })();
+    </script>
+  </body>
 </html>
