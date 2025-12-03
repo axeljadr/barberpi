@@ -4,35 +4,32 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Barber Studio - Notificaciones</title>
-    <link rel="stylesheet" href="../static/notificacion.css" />
+    <link rel="stylesheet" href="/static/notificacion.css" />
+    <link rel="stylesheet" href="/static/alerts.css" />
   </head>
   <body>
     <header class="header">
       <div class="block">
         <img
           class="imagen-de-barberia"
-          src="../images/barber.jpg"
-          alt="Logo Barber Studio"
+          src="/images/barber.jpg"
+          alt="Logo Barber"
         />
       </div>
       <nav class="navigation-pill-list" aria-label="Navegación principal">
-        <a href="../templates/perfil.html" class="navigation-pill">
+        <a href="/perfil" class="navigation-pill">
           <span class="title">Mi Perfil</span>
         </a>
-        <a href="../templates/home.html" class="navigation-pill">
+        <a href="/home" class="navigation-pill">
           <span class="title">Inicio</span>
         </a>
-        <a href="../templates/agendar.html" class="navigation-pill">
+        <a href="/agendar" class="navigation-pill">
           <span class="">Agendar Cita</span>
         </a>
-        <a href="notificacion.html" class="navigation-pill">
+        <a href="notificacion" class="navigation-pill">
           <span class="title">Notificaciones</span>
         </a>
-        <a
-          href="../templates/login.html"
-          class="navigation-pill"
-          id="logout-link"
-        >
+        <a href="/" class="navigation-pill" id="logout-link">
           <span class="title">Cerrar Sesión</span>
         </a>
       </nav>
@@ -49,8 +46,8 @@
       <div class="footer-logo">
         <img
           class="imagen-de-barberia"
-          src="../images/barber.jpg"
-          alt="Barber Studio Logo"
+          src="/images/barber.jpg"
+          alt="Logo Barber"
         />
       </div>
       <nav class="text-link-list" aria-labelledby="footer-contact">
@@ -113,15 +110,92 @@
       </nav>
     </footer>
 
+    <div id="app-notify-root">
+      <div id="app-toast-container" class="toast-container"></div>
+      <div id="app-modal-container"></div>
+    </div>
+
     <script>
-      const API_BASE = "http://localhost:4000/api"; // ajusta si usas otro path
+      (function notifyHelpers() {
+        const toastContainer = document.getElementById("app-toast-container");
+        const modalContainer = document.getElementById("app-modal-container");
+
+        window.showToast = function (text = "", type = "info", timeout = 3500) {
+          return new Promise((resolve) => {
+            if (!toastContainer) {
+              console.warn("Toast container missing:", text);
+              return resolve();
+            }
+            const wrap = document.createElement("div");
+            wrap.className = `app-toast ${type}`;
+            wrap.innerHTML = `<div class="msg">${text}</div><button class="close-btn" aria-label="close">&times;</button>`;
+            const closeBtn = wrap.querySelector(".close-btn");
+            let removed = false;
+            const cleanup = () => {
+              if (removed) return;
+              removed = true;
+              wrap.style.opacity = "0";
+              setTimeout(() => {
+                try {
+                  toastContainer.removeChild(wrap);
+                } catch (e) {}
+                resolve();
+              }, 180);
+            };
+            closeBtn.addEventListener("click", cleanup);
+            toastContainer.appendChild(wrap);
+            setTimeout(cleanup, timeout || 3500);
+          });
+        };
+
+        window.showConfirm = function (title = "Confirmar", message = "") {
+          return new Promise((resolve) => {
+            if (!modalContainer) {
+              console.warn("Modal container missing:", title, message);
+              return resolve(false);
+            }
+            const backdrop = document.createElement("div");
+            backdrop.className = "app-modal-backdrop";
+            backdrop.innerHTML = `
+              <div class="app-modal" role="dialog" aria-modal="true">
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <div class="row">
+                  <button class="app-btn ghost" id="app-cancel-btn">Cancelar</button>
+                  <button class="app-btn primary" id="app-ok-btn">Aceptar</button>
+                </div>
+              </div>
+            `;
+            modalContainer.appendChild(backdrop);
+            const ok = backdrop.querySelector("#app-ok-btn");
+            const cancel = backdrop.querySelector("#app-cancel-btn");
+            const cleanup = (value) => {
+              try {
+                modalContainer.removeChild(backdrop);
+              } catch (e) {}
+              resolve(Boolean(value));
+            };
+            cancel.addEventListener("click", () => cleanup(false));
+            ok.addEventListener("click", () => cleanup(true));
+            backdrop.addEventListener("click", (ev) => {
+              if (ev.target === backdrop) cleanup(false);
+            });
+          });
+        };
+      })();
+
+      const API_BASE =
+        window.location.hostname.includes("localhost") ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:4000/api"
+          : `${window.location.origin}/api`;
 
       function getToken() {
         return localStorage.getItem("token");
       }
 
       function getRol() {
-        return localStorage.getItem("rol"); // asumiendo que guardas el rol en LS
+        return localStorage.getItem("rol");
       }
 
       function logout() {
@@ -129,7 +203,7 @@
         localStorage.removeItem("rol");
         localStorage.removeItem("nombre");
         // lo que más tengas
-        window.location.href = "../templates/login.html";
+        window.location.href = "/";
       }
 
       document
@@ -198,15 +272,23 @@
         const rol = getRol();
 
         if (!token) {
-          alert("Debes iniciar sesión para ver tus notificaciones.");
-          window.location.href = "../templates/login.html";
+          await showToast(
+            "Debes iniciar sesión para ver tus notificaciones.",
+            "info",
+            3000
+          );
+          window.location.href = "/";
           return false;
         }
 
         // seguridad básica en front: solo clientes
         if (rol && rol !== "cliente") {
-          alert("Solo los clientes pueden ver esta página de notificaciones.");
-          window.location.href = "../templates/home.html";
+          await showToast(
+            "Solo los clientes pueden ver esta página de notificaciones.",
+            "info",
+            3000
+          );
+          window.location.href = "/home";
           return false;
         }
 
@@ -227,7 +309,11 @@
           });
 
           if (resp.status === 401 || resp.status === 403) {
-            alert("Sesión no válida. Inicia sesión de nuevo.");
+            await showToast(
+              "Sesión no válida. Inicia sesión de nuevo.",
+              "error",
+              3000
+            );
             logout();
             return;
           }
@@ -235,7 +321,7 @@
           if (!resp.ok) {
             const errData = await resp.json().catch(() => ({}));
             console.error("Error backend:", errData);
-            alert("Error al obtener notificaciones.");
+            await showToast("Error al obtener notificaciones.", "error", 3000);
             return;
           }
 
@@ -243,7 +329,7 @@
           renderNotificaciones(notifs);
         } catch (err) {
           console.error("Error al cargar notificaciones:", err);
-          alert("Error de conexión con el servidor.");
+          await showToast("Error de conexión con el servidor.", "error", 3000);
         }
       }
 
@@ -324,7 +410,7 @@
         });
 
         btnAgendar.addEventListener("click", () => {
-          window.location.href = "../templates/agendar.html";
+          window.location.href = "/agendar";
         });
 
         return card;
@@ -375,14 +461,18 @@
           });
           if (!resp.ok) {
             const data = await resp.json().catch(() => ({}));
-            alert(data.error || "Error al confirmar cita.");
+            await showToast(
+              data.error || "Error al confirmar cita.",
+              "error",
+              3000
+            );
             return;
           }
-          alert("Cita confirmada.");
+          await showToast("Cita confirmada.", "success", 3000);
           if (card) card.remove();
         } catch (err) {
           console.error("Error al confirmar cita:", err);
-          alert("Error de conexión.");
+          await showToast("Error de conexión.", "error", 3000);
         }
       }
 
@@ -398,14 +488,18 @@
           });
           if (!resp.ok) {
             const data = await resp.json().catch(() => ({}));
-            alert(data.error || "Error al cancelar cita.");
+            await showToast(
+              data.error || "Error al cancelar cita.",
+              "error",
+              3000
+            );
             return;
           }
-          alert("Cita cancelada.");
+          await showToast("Cita cancelada.", "info", 3000);
           if (card) card.remove();
         } catch (err) {
           console.error("Error al cancelar cita:", err);
-          alert("Error de conexión.");
+          await showToast("Error de conexión.", "error", 3000);
         }
       }
 
@@ -421,14 +515,18 @@
           });
           if (!resp.ok) {
             const data = await resp.json().catch(() => ({}));
-            alert(data.error || "Error al preparar reagenda.");
+            await showToast(
+              data.error || "Error al preparar reagenda.",
+              "error",
+              3000
+            );
             return;
           }
           // La cita se marca como cancelada/liberada en backend.
-          window.location.href = "../templates/agendar.html";
+          window.location.href = "/agendar";
         } catch (err) {
           console.error("Error al reagendar cita:", err);
-          alert("Error de conexión.");
+          await showToast("Error de conexión.", "error", 3000);
         }
       }
 
