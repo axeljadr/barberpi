@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -7,13 +6,16 @@
     <link rel="stylesheet" href="/static/newaccount.css" />
     <link rel="stylesheet" href="/static/alerts.css" />
   </head>
-
   <body>
+    <!-- Notification root required por notifyHelpers -->
+    <div id="app-notify-root">
+      <div id="app-toast-container" class="toast-container"></div>
+      <div id="app-modal-container"></div>
+    </div>
+
     <div class="container">
       <h1>ivan barber</h1>
       <h2>Crear Nueva Cuenta</h2>
-
-      <div id="alert" class="alert"></div>
 
       <form id="formRegistro">
         <input
@@ -38,8 +40,87 @@
     </div>
 
     <script>
+      (function notifyHelpers() {
+        const toastContainer = document.getElementById("app-toast-container");
+        const modalContainer = document.getElementById("app-modal-container");
+
+        window.showToast = function (text = "", type = "info", timeout = 3500) {
+          return new Promise((resolve) => {
+            if (!toastContainer) {
+              console.warn("Toast container missing:", text);
+              return resolve();
+            }
+            const wrap = document.createElement("div");
+            wrap.className = `app-toast ${type}`;
+            wrap.innerHTML = `<div class="msg">${text}</div><button class="close-btn" aria-label="close">&times;</button>`;
+            const closeBtn = wrap.querySelector(".close-btn");
+            let removed = false;
+            const cleanup = () => {
+              if (removed) return;
+              removed = true;
+              wrap.style.opacity = "0";
+              setTimeout(() => {
+                try {
+                  toastContainer.removeChild(wrap);
+                } catch (e) {}
+                resolve();
+              }, 180);
+            };
+            closeBtn.addEventListener("click", cleanup);
+            toastContainer.appendChild(wrap);
+            setTimeout(cleanup, timeout || 3500);
+          });
+        };
+
+        window.showConfirm = function (title = "Confirmar", message = "") {
+          return new Promise((resolve) => {
+            if (!modalContainer) {
+              console.warn("Modal container missing:", title, message);
+              return resolve(false);
+            }
+            const backdrop = document.createElement("div");
+            backdrop.className = "app-modal-backdrop";
+            backdrop.innerHTML = `
+              <div class="app-modal" role="dialog" aria-modal="true">
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <div class="row">
+                  <button class="app-btn ghost" id="app-cancel-btn">Cancelar</button>
+                  <button class="app-btn primary" id="app-ok-btn">Aceptar</button>
+                </div>
+              </div>
+            `;
+            modalContainer.appendChild(backdrop);
+            const ok = backdrop.querySelector("#app-ok-btn");
+            const cancel = backdrop.querySelector("#app-cancel-btn");
+            const cleanup = (value) => {
+              try {
+                modalContainer.removeChild(backdrop);
+              } catch (e) {}
+              resolve(Boolean(value));
+            };
+            cancel.addEventListener("click", () => cleanup(false));
+            ok.addEventListener("click", () => cleanup(true));
+            backdrop.addEventListener("click", (ev) => {
+              if (ev.target === backdrop) cleanup(false);
+            });
+          });
+        };
+      })();
+    </script>
+
+    <script>
+      // API_BASE para localhost y producción (Render u otro host)
+      const API_BASE = (function () {
+        const host = window.location.hostname;
+        if (host.includes("localhost") || host === "127.0.0.1") {
+          return "http://localhost:4000/api";
+        }
+        // En producción usa el mismo origen + /api para que coincida con app.post("/api/auth/registro")
+        return `${window.location.origin}/api`;
+      })();
+
       const form = document.getElementById("formRegistro");
-      const alertBox = document.getElementById("alert");
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault(); // evita recargar la página
@@ -51,59 +132,45 @@
 
         // Validaciones rápidas en frontend
         if (!nombre || !email || !contraseña) {
-          mostrarAlerta("Por favor completa todos los campos.", "error");
+          await showToast("Por favor completa todos los campos.", "error", 3000);
           return;
         }
 
         if (contraseña.length < 8) {
-          mostrarAlerta(
-            "La contraseña debe tener al menos 8 caracteres.",
-            "error"
-          );
+          await showToast("La contraseña debe tener al menos 8 caracteres.", "error", 3000);
           return;
         }
 
         try {
-          // Enviar datos al backend
-          const response = await fetch(
-            "http://localhost:4000/api/auth/registro",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ nombre, email, contraseña }),
-            }
-          );
+          // Enviar datos al backend usando API_BASE
+          const response = await fetch(`${API_BASE}/auth/registro`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nombre, email, contraseña }),
+          });
 
-          const data = await response.json();
+          let data = {};
+          try {
+            data = await response.json();
+          } catch (err) {
+            data = {};
+          }
 
           if (response.ok) {
-            mostrarAlerta(
-              data.mensaje || "Cuenta creada correctamente 🎉",
-              "success"
-            );
+            await showToast(data.mensaje || "Cuenta creada correctamente", "success", 2000);
 
             // Redirigir al login luego de 2 segundos
             setTimeout(() => {
               window.location.href = "login.html";
             }, 2000);
           } else {
-            mostrarAlerta(
-              data.error || "Ocurrió un error al crear cuenta",
-              "error"
-            );
+            await showToast(data.error || data.message || `Error: ${response.status}`, "error", 3500);
           }
         } catch (err) {
-          mostrarAlerta("Error de conexión con el servidor 😓", "error");
           console.error("Error:", err);
+          await showToast("Error de conexión con el servidor", "error", 3000);
         }
       });
-
-      // Función para mostrar mensajes
-      function mostrarAlerta(mensaje, tipo) {
-        alertBox.textContent = mensaje;
-        alertBox.className = `alert ${tipo}`;
-        alertBox.style.display = "block";
-      }
     </script>
   </body>
 </html>
