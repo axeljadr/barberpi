@@ -152,6 +152,16 @@ function verificarToken(req, res, next) {
     return res.status(401).json({ error: "Token inválido o expirado" });
   }
 }
+// DEBUG - listar archivos de fotos de perfil (temporal)
+app.get("/debug/uploads/fotosdeperfil", (req, res) => {
+  try {
+    const dir = path.join(__dirname, "uploads", "fotosdeperfil");
+    const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+    res.json({ dir, count: files.length, files });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
 app.set('trust proxy', true);
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "templates", "login.html"));
