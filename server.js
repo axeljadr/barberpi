@@ -1356,71 +1356,81 @@ app.get("/api/notificaciones/barbero", verificarToken, async (req, res) => {
       .status(403)
       .json({ error: "Solo barberos pueden ver estas notificaciones" });
   }
+
   try {
     const pool = await conectarDB();
 
-    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
-    const pageSize = Math.max(parseInt(req.query.pageSize || "10", 10), 1);
-    const offset = (page - 1) * pageSize;
-
-    // Si es admin y viene id_barbero en query, usarlo; si no, usar el id del token
-    const idBarbero =
-      req.usuario.rol === "admin" && req.query.id_barbero
-        ? parseInt(req.query.id_barbero, 10)
-        : req.usuario.id;
-
-    // Query con COUNT(*) OVER() y paginación OFFSET FETCH (SQL Server)
     const result = await pool
       .request()
-      .input("id_barbero", mssql.Int, idBarbero)
-      .input("offset", mssql.Int, offset)
-      .input("pageSize", mssql.Int, pageSize).query(`
+      .input("id_barbero", mssql.Int, req.usuario.id).query(`
         SELECT 
-          n.id_notificacion,
-          n.id_cita,
-          n.tipo,
-          COALESCE(n.titulo, '') AS titulo,
-          COALESCE(n.mensaje, '') AS mensaje,
-          c.fecha AS fecha_cita,
-          c.hora AS hora_inicio,
+          c.id_cita,
+          c.fecha,
+          c.hora,
+          c.estado,
+          c.creado_en,
           u.nombre AS nombre_cliente,
-          s.nombre AS nombre_servicio,
-          n.creado_en AS timestamp,
-          COUNT(*) OVER() AS total_count
-        FROM Notificaciones n
-        LEFT JOIN Citas c ON n.id_cita = c.id_cita
-        LEFT JOIN Usuarios u ON c.id_usuario = u.id_usuario
-        LEFT JOIN Servicios s ON c.servicio = s.id_servicio
-        WHERE n.id_barbero = @id_barbero AND n.activo = 1
-        ORDER BY n.creado_en DESC
-        OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY
+          s.nombre AS nombre_servicio
+        FROM Citas c
+        JOIN Usuarios u ON c.id_usuario = u.id_usuario
+        JOIN Servicios s ON c.servicio = s.id_servicio
+        WHERE c.id_barbero = @id_barbero
+          AND c.creado_en >= DATEADD(DAY, -7, GETDATE())
+        ORDER BY c.creado_en DESC
       `);
 
-    const rows = result.recordset || [];
-    const total = rows.length ? rows[0].total_count : 0;
+    const citas = result.recordset;
 
-    const notifications = rows.map((r) => ({
-      id_notificacion: r.id_notificacion,
-      id_cita: r.id_cita,
-      tipo: r.tipo,
-      titulo: r.titulo,
-      mensaje: r.mensaje,
-      fecha_cita: r.fecha_cita,
-      hora_inicio: r.hora_inicio,
-      nombre_cliente: r.nombre_cliente,
-      nombre_servicio: r.nombre_servicio,
-      timestamp: r.timestamp,
-    }));
+    // Convertir cada cita en una "notificación" según su estado
+    const notificaciones = citas.map((c) => {
+      let tipo;
+      let titulo;
+      let mensaje;
 
-    res.json({
-      total,
-      page,
-      pageSize,
-      notifications,
+      switch (c.estado) {
+        case "pendiente":
+          tipo = "nueva";
+          titulo = "Nueva cita agendada";
+          mensaje = `El cliente ${c.nombre_cliente} ha agendado una cita para ${c.nombre_servicio}`;
+          break;
+        case "cancelada":
+          tipo = "cancelada";
+          titulo = "Cita cancelada";
+          mensaje = `${c.nombre_cliente} ha cancelado su cita para ${c.nombre_servicio}`;
+          break;
+        case "confirmada":
+          tipo = "confirmada";
+          titulo = "Cita confirmada";
+          mensaje = `${c.nombre_cliente} ha confirmado su cita para ${c.nombre_servicio}`;
+          break;
+        case "completada":
+          tipo = "completada";
+          titulo = "Cita completada";
+          mensaje = `Cita con ${c.nombre_cliente} para ${c.nombre_servicio} ha sido completada`;
+          break;
+        default:
+          tipo = "nueva";
+          titulo = "Actualización de cita";
+          mensaje = `Cambio en la cita de ${c.nombre_cliente} para ${c.nombre_servicio}`;
+      }
+
+      return {
+        id_cita: c.id_cita,
+        tipo,
+        titulo,
+        mensaje,
+        fecha_cita: c.fecha,
+        hora_inicio: c.hora,
+        nombre_cliente: c.nombre_cliente,
+        nombre_servicio: c.nombre_servicio,
+        timestamp: c.creado_en,
+      };
     });
-  } catch (err) {
-    console.error("Error en /api/notificaciones/barbero (paginado):", err);
-    res.status(500).json({ error: "Error al obtener notificaciones" });
+
+    res.json(notificaciones);
+  } catch (error) {
+    console.error("Error al obtener notificaciones barbero:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 app.post("/api/citas/:id_cita/reagendar", verificarToken, async (req, res) => {
