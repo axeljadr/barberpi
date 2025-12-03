@@ -1,326 +1,106 @@
 <!DOCTYPE html>
 <html lang="es">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Clientes - BarberPi</title>
-    <link rel="stylesheet" href="/static/clientes.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lista de Clientes</title>
+    <link rel="stylesheet" href="/static/clientes.css" />
+
   </head>
+
   <body>
-    <div class="container">
-      <header class="header" role="banner">
-        <div class="brand">
-          <img src="/images/barber.jpg" alt="Barber Studio" />
-          <div>
-            <h1 class="panel-title">Clientes</h1>
-            <div style="color:var(--muted); font-size:13px">Panel de clientes</div>
-          </div>
-        </div>
+    <h1>Lista de Clientes</h1>
 
-        <nav class="navigation-pill-list" aria-label="Navegación principal">
-          <a href="/homebarber" class="nav-pill">Inicio</a>
-          <a href="/barber_agenda" class="nav-pill">Agenda</a>
-          <a href="/notibarbero" class="nav-pill">Notificaciones</a>
-          <a href="/perfil" class="nav-pill">Mi perfil</a>
-          <a href="/" class="nav-pill">Cerrar sesión</a>
-        </nav>
-      </header>
+    <div class="search-bar">
+      <input 
+        type="text" 
+        id="search-input" 
+        placeholder="Buscar cliente por nombre o ID..."
+      />
+      <button class="btn-refresh" onclick="loadClients()">Actualizar</button>
+    </div>
 
-      <main class="panel" id="clients-app" data-module="clients" role="main">
-        <div class="panel-header">
-          <div>
-            <h2 style="margin:0">Lista de clientes</h2>
-            <div style="color:var(--muted); font-size:13px">Buscar y gestionar clientes</div>
-          </div>
-          <div class="panel-actions" role="group" aria-label="Acciones">
-            <!-- Se eliminó +Nuevo según petición -->
-            <button id="btn-refresh" class="btn btn-secondary" type="button">Actualizar</button>
-          </div>
-        </div>
-
-        <div class="controls-row">
-          <div style="display:flex; gap:8px; align-items:center;">
-            <label for="search" class="visually-hidden">Buscar</label>
-            <input id="search" class="search-input" type="search" placeholder="Buscar por nombre, email o teléfono" autocomplete="off"/>
-          </div>
-
-          <div style="display:flex; gap:8px; align-items:center;">
-            <label for="pageSize" class="visually-hidden">Elementos por página</label>
-            <select id="pageSize" class="select" aria-label="Elementos por página">
-              <option value="10">10</option>
-              <option value="25" selected>25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-        </div>
-
-        <section class="stats" aria-hidden="false" style="margin-bottom:12px;">
-          <div class="stat-card" role="status" aria-live="polite">
-            <div class="stat-number" id="stat-total">—</div>
-            <div class="stat-label">clientes totales</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="stat-with-citas">—</div>
-            <div class="stat-label">clientes con citas completadas</div>
-          </div>
-          <!-- eliminado promedio -->
-        </section>
-
-        <section aria-labelledby="clients-table-heading">
-          <h3 id="clients-table-heading" class="visually-hidden">Tabla de clientes</h3>
-
-          <table class="table" id="clients-table" aria-describedby="table-desc">
-            <caption id="table-desc" class="visually-hidden">Lista de clientes con teléfono, email, fecha de registro y número de citas completadas</caption>
-            <thead>
-              <tr>
-                <th scope="col">Nombre completo</th>
-                <th scope="col">Teléfono</th>
-                <th scope="col">Email</th>
-                <th scope="col">Fecha registro</th>
-                <th scope="col" style="text-align:center">Citas completadas</th>
-                <th scope="col">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="clients-tbody">
-              <tr><td colspan="6" class="empty">Cargando...</td></tr>
-            </tbody>
-          </table>
-        </section>
-
-        <div class="pager" aria-label="Paginación">
-          <div id="pager-info" class="pager-info" aria-live="polite"></div>
-          <div style="display:flex; gap:8px;">
-            <button id="prev" class="btn btn-secondary">Anterior</button>
-            <button id="next" class="btn btn-secondary">Siguiente</button>
-          </div>
-        </div>
-      </main>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre Completo</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Rol</th>
+          </tr>
+        </thead>
+        <tbody id="client-table-body">
+          <!-- Filas generadas dinámicamente -->
+        </tbody>
+      </table>
     </div>
 
     <script>
-      (function () {
-        // API base: si estás en desarrollo usa localhost:4000
-        const API_BASE =
-          window.location.hostname.includes("localhost") ||
-          window.location.hostname === "127.0.0.1"
-            ? "http://localhost:4000/api"
-            : `${window.location.origin}/api`;
+      const API_BASE =
+        window.location.hostname.includes("localhost") ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:4000"
+          : window.location.origin;
 
-        // elementos
-        const el = {
-          search: document.getElementById("search"),
-          pageSize: document.getElementById("pageSize"),
-          tbody: document.getElementById("clients-tbody"),
-          prev: document.getElementById("prev"),
-          next: document.getElementById("next"),
-          pagerInfo: document.getElementById("pager-info"),
-          statTotal: document.getElementById("stat-total"),
-          statWithCitas: document.getElementById("stat-with-citas"),
-          btnRefresh: document.getElementById("btn-refresh"),
-        };
+      const API_CLIENTS = `${API_BASE}/api/clientes`;
 
-        const state = {
-          page: 1,
-          pageSize: parseInt(el.pageSize.value, 10) || 25,
-          total: 0,
-          rows: [],
-        };
+      function getToken() {
+        return localStorage.getItem("token");
+      }
 
-        function escapeHtml(s) {
-          if (s == null) return "";
-          return String(s)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-        }
+      document.addEventListener("DOMContentLoaded", loadClients);
 
-        function debounce(fn, wait = 300) {
-          let t;
-          return (...args) => {
-            clearTimeout(t);
-            t = setTimeout(() => fn(...args), wait);
-          };
-        }
+      async function loadClients() {
+        const token = getToken();
 
-        async function apiFetch(path, options = {}) {
-          const token = localStorage.getItem("token") || "";
-          const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
-          if (token) headers.Authorization = `Bearer ${token}`;
-
-          const resp = await fetch(`${API_BASE}${path}`, Object.assign({}, options, { headers }));
-          if (!resp.ok) {
-            const contentType = resp.headers.get("Content-Type") || "";
-            let errText = `HTTP ${resp.status}`;
-            try {
-              if (contentType.includes("application/json")) {
-                const json = await resp.json();
-                errText = json.error || json.message || JSON.stringify(json);
-              } else {
-                errText = await resp.text();
-              }
-            } catch (e) {}
-            const err = new Error(errText || `HTTP ${resp.status}`);
-            err.status = resp.status;
-            throw err;
-          }
-          return resp.json().catch(() => ({}));
-        }
-
-        function renderTable(rows) {
-          state.rows = rows || [];
-          if (!rows || rows.length === 0) {
-            el.tbody.innerHTML = '<tr><td colspan="6" class="empty">No se encontraron clientes</td></tr>';
-            return;
-          }
-          el.tbody.innerHTML = "";
-          const fragment = document.createDocumentFragment();
-
-          rows.forEach((r) => {
-            const tr = document.createElement("tr");
-            const nombre = `${r.nombre || ""} ${r.apellidoP || ""} ${r.apellidoM || ""}`.trim();
-            tr.innerHTML = `
-              <td>${escapeHtml(nombre)}</td>
-              <td>${escapeHtml(r.telefono || "-")}</td>
-              <td>${escapeHtml(r.email || "-")}</td>
-              <td>${ r.fecha_registro ? new Date(r.fecha_registro).toLocaleDateString() : "-" }</td>
-              <td style="text-align:center;"><span class="badge">${ r.citas_completadas || 0 }</span></td>
-              <td>
-                <div class="action-buttons" role="group" aria-label="Acciones por cliente">
-                  <button class="btn btn-secondary action-edit" data-id="${r.id_usuario}" type="button">Editar</button>
-                  <button class="btn btn-danger action-delete" data-id="${r.id_usuario}" type="button">Eliminar</button>
-                </div>
-              </td>
-            `;
-            fragment.appendChild(tr);
+        try {
+          const resp = await fetch(`${API_CLIENTS}/lista`, {
+            headers: { Authorization: `Bearer ${token}` },
           });
 
-          el.tbody.appendChild(fragment);
-        }
-
-        function updateStats() {
-          el.statTotal.textContent = state.total || 0;
-          const withCitas = (state.rows || []).filter((r) => (r.citas_completadas || 0) > 0).length;
-          el.statWithCitas.textContent = withCitas;
-        }
-
-        function updatePagerInfo() {
-          const start = (state.page - 1) * state.pageSize + 1;
-          const end = Math.min(state.page * state.pageSize, state.total || 0);
-          el.pagerInfo.textContent = state.total ? `Mostrando ${start}-${end} de ${state.total}` : "";
-          el.prev.disabled = state.page <= 1;
-          el.next.disabled = state.page * state.pageSize >= (state.total || 0);
-        }
-
-        async function loadClients() {
-          const q = (el.search.value || "").trim();
-          state.pageSize = parseInt(el.pageSize.value, 10) || 25;
-
-          try {
-            el.tbody.innerHTML = '<tr><td colspan="6" class="empty">Cargando...</td></tr>';
-            const params = new URLSearchParams({ q, page: String(state.page), pageSize: String(state.pageSize) });
-            const data = await apiFetch(`/tabla-clientes?${params.toString()}`);
-            state.total = data.total || 0;
-            renderTable(data.rows || []);
-            updateStats();
-            updatePagerInfo();
-          } catch (err) {
-            el.tbody.innerHTML = `<tr><td colspan="6" class="empty">Error: ${escapeHtml(err.message || String(err))}</td></tr>`;
-            console.error("loadClients error", err);
-            alert("Error al cargar clientes");
+          if (!resp.ok) {
+            alert("No se pudo obtener la lista de clientes");
+            return;
           }
+
+          const clientes = await resp.json();
+          renderClients(clientes);
+        } catch (err) {
+          console.error(err);
+          alert("Error al cargar los clientes");
         }
+      }
 
-        // Delegación de botones
-        async function onTableClick(e) {
-          const btn = e.target.closest("button");
-          if (!btn) return;
-          const id = btn.dataset.id;
-          if (!id) return;
+      function renderClients(clientes) {
+        const tbody = document.getElementById("client-table-body");
+        tbody.innerHTML = "";
 
-          if (btn.matches(".action-edit")) {
-            await openEdit(id);
-          } else if (btn.matches(".action-delete")) {
-            await confirmDelete(id);
-          }
-        }
+        clientes.forEach(cliente => {
+          const tr = document.createElement("tr");
 
-        async function openEdit(id) {
-          try {
-            // obtener los datos actuales
-            const profile = await apiFetch(`/auth/perfil/${id}`);
-            // formulario mínimo (prompt)
-            const nombre = prompt("Nombre", profile.nombre || "");
-            if (nombre == null) return;
-            const apellidoP = prompt("Apellido Paterno", profile.apellidoP || "");
-            if (apellidoP == null) return;
-            const apellidoM = prompt("Apellido Materno", profile.apellidoM || "");
-            if (apellidoM == null) return;
-            const telefono = prompt("Teléfono", profile.telefono || "");
-            if (telefono == null) return;
-            const email = prompt("Email", profile.email || "");
-            if (email == null) return;
+          tr.innerHTML = `
+            <td>${cliente.id_usuario}</td>
+            <td>${cliente.nombre} ${cliente.apellidoP} ${cliente.apellidoM}</td>
+            <td>${cliente.telefono || "-"}</td>
+            <td>${cliente.email || "-"}</td>
+            <td>${cliente.rol || "cliente"}</td>
+          `;
 
-            const payload = {
-              nombre: String(nombre).trim(),
-              apellidoP: String(apellidoP).trim(),
-              apellidoM: String(apellidoM).trim(),
-              telefono: String(telefono).trim(),
-              email: String(email).trim(),
-            };
+          tbody.appendChild(tr);
+        });
+      }
 
-            await apiFetch(`/usuarios/${id}`, {
-              method: "PUT",
-              body: JSON.stringify(payload),
-            });
+      document.getElementById("search-input").addEventListener("input", function () {
+        const searchText = this.value.toLowerCase();
+        const rows = document.querySelectorAll("#client-table-body tr");
 
-            alert("Cliente actualizado");
-            await loadClients();
-          } catch (err) {
-            console.error("openEdit error", err);
-            alert("Error al actualizar cliente: " + (err.message || ""));
-          }
-        }
-
-        async function confirmDelete(id) {
-          const ok = confirm("¿Seguro que deseas eliminar este cliente?");
-          if (!ok) return;
-
-          try {
-            await apiFetch(`/usuarios/${id}`, { method: "DELETE" });
-            alert("Cliente eliminado");
-            await loadClients();
-          } catch (err) {
-            console.error("delete error", err);
-            alert("Error al eliminar cliente: " + (err.message || ""));
-          }
-        }
-
-        // eventos
-        function attachEvents() {
-          el.search.addEventListener("input", debounce(() => { state.page = 1; loadClients(); }, 350));
-          el.pageSize.addEventListener("change", () => { state.page = 1; loadClients(); });
-          el.prev.addEventListener("click", () => { if (state.page > 1) { state.page--; loadClients(); }});
-          el.next.addEventListener("click", () => { state.page++; loadClients(); });
-          el.btnRefresh.addEventListener("click", () => loadClients());
-          document.getElementById("clients-table").addEventListener("click", onTableClick);
-        }
-
-        // bootstrap
-        function init() {
-          attachEvents();
-          loadClients();
-        }
-
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", init);
-        } else {
-          init();
-        }
-      })();
+        rows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(searchText) ? "" : "none";
+        });
+      });
     </script>
   </body>
 </html>
-
