@@ -486,60 +486,66 @@
     }
   }
 
-  function openPhotoModal() {
-    document.getElementById("photo-modal").style.display = "flex";
-    selectedPhotoFile = null;
-    document.getElementById("file-name").textContent = "Ningún archivo seleccionado";
-    document.getElementById("photo-file-input").value = "";
 
-    const fotoActual = currentUser.foto_perfil || "/images/default-avatar.jpg";
-    const fotoCompleta = normalizeImageUrl(fotoActual);
-    document.getElementById("photo-preview").src = fotoCompleta;
-  }
+      function openPhotoModal() {
+        document.getElementById("photo-modal").style.display = "flex";
+        selectedPhotoFile = null;
+        document.getElementById("file-name").textContent =
+          "Ningún archivo seleccionado";
+        document.getElementById("photo-file-input").value = "";
 
-  function closePhotoModal() {
-    document.getElementById("photo-modal").style.display = "none";
-    selectedPhotoFile = null;
-    document.getElementById("file-name").textContent = "Ningún archivo seleccionado";
-    document.getElementById("photo-file-input").value = "";
-  }
-
-  async function uploadPhoto() {
-    if (!selectedPhotoFile) {
-      alert("Por favor, selecciona una imagen primero");
-      return;
-    }
-
-    const token = getToken();
-    const formData = new FormData();
-    formData.append("foto", selectedPhotoFile);
-
-    try {
-      const resp = await fetch(`${API_AUTH}/perfil/foto`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const data = await resp.json().catch(() => ({}));
-
-      if (!resp.ok) {
-        alert(data.error || "Error al subir la foto");
-        return;
+        const fotoActual =
+          currentUser.foto_perfil || "/images/default-avatar.jpg";
+        const fotoCompleta = fotoActual.startsWith("http")
+          ? fotoActual
+          : `${fotoActual}`;
+        document.getElementById("photo-preview").src = fotoCompleta;
       }
 
-      currentUser.foto_perfil = data.foto_perfil;
-      updateDisplay(currentUser);
+      function closePhotoModal() {
+        document.getElementById("photo-modal").style.display = "none";
+        selectedPhotoFile = null;
+        document.getElementById("file-name").textContent =
+          "Ningún archivo seleccionado";
+        document.getElementById("photo-file-input").value = "";
+      }
 
-      closePhotoModal();
-      alert("Foto de perfil actualizada correctamente");
-    } catch (err) {
-      console.error("Error al subir foto:", err);
-      alert("Error de conexión al subir la foto");
-    }
-  }
+      async function uploadPhoto() {
+        if (!selectedPhotoFile) {
+          alert("Por favor, selecciona una imagen primero");
+          return;
+        }
+
+        const token = getToken();
+        const formData = new FormData();
+        formData.append("foto", selectedPhotoFile);
+
+        try {
+          const resp = await fetch(`${API_AUTH}/perfil/foto`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          const data = await resp.json().catch(() => ({}));
+
+          if (!resp.ok) {
+            alert(data.error || "Error al subir la foto");
+            return;
+          }
+
+          currentUser.foto_perfil = data.foto_perfil;
+          updateDisplay(currentUser);
+
+          closePhotoModal();
+          alert("Foto de perfil actualizada correctamente");
+        } catch (err) {
+          console.error("Error al subir foto:", err);
+          alert("Error de conexión al subir la foto");
+        }
+      }
 
   async function saveUserDataToBackend() {
     const token = getToken();
