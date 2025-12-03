@@ -243,70 +243,90 @@
         setupEventListeners();
       });
 
-      async function loadNotifications(page = 1) {
-        const token = getToken();
-        if (!token) {
-          await showToast(
-            "No estás autenticado. Redirigiendo al login...",
-            "error",
-            1600
-          );
-          setTimeout(() => (window.location.href = "/"), 1400);
-          return;
-        }
+      async function loadNotifications(p = page) {
+  const token = getToken();
+  if (!token) {
+    alert("No estás autenticado. Redirigiendo al login...");
+    window.location.href = "../templates/login.html";
+    return;
+  }
 
-        try {
-          const resp = await fetch(
-            `${API_NOTIFICACIONES}/barbero?page=${page}&pageSize=${PAGE_SIZE}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
+  try {
+    const url = `${API_NOTIFICACIONES}/barbero?page=${encodeURIComponent(p)}&pageSize=${encodeURIComponent(PAGE_SIZE)}`;
+    console.debug("Fetching notificaciones from:", url);
 
-          if (!resp.ok) {
-            const text = await resp.text();
-            console.error("Error al cargar notificaciones:", resp.status, text);
-            await showToast("Error al cargar notificaciones", "error", 2000);
-            return;
-          }
+    const resp = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json"
+      },
+    });
 
-          const json = await resp.json();
-          totalItems = json.total || 0;
-          currentPage = json.page || page;
-          const pageSize = json.pageSize || PAGE_SIZE;
-          totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    if (resp.status === 401) {
+      console.warn("Token inválido o expirado");
+      localStorage.removeItem("token");
+      alert("Sesión expirada. Vuelve a iniciar sesión.");
+      window.location.href = "../templates/login.html";
+      return;
+    }
 
-          const leidasSet = getReadSet();
+    if (resp.status === 403) {
+      console.warn("No tienes permisos para ver estas notificaciones");
+      alert("No tienes permisos para ver estas notificaciones");
+      return;
+    }
 
-          notifications = (json.notifications || []).map((n) => ({
-            id:
-              n.id_notificacion ||
-              n.id_cita ||
-              Math.random().toString(36).slice(2),
-            id_cita: n.id_cita,
-            type: mapTipo(n.tipo),
-            title: n.titulo || "",
-            message: n.mensaje || "",
-            client: n.nombre_cliente,
-            service: n.nombre_servicio,
-            date: n.fecha_cita,
-            time: n.hora_inicio,
-            timestamp: n.timestamp || new Date().toISOString(),
-            read: leidasSet.has(n.id_notificacion || n.id_cita),
-            actions: getActionsForType(n.tipo),
-          }));
-
-          renderNotifications();
-          renderPagination();
-        } catch (err) {
-          console.error("Error conexión notificaciones:", err);
-          await showToast(
-            "Error de conexión al cargar notificaciones",
-            "error",
-            2000
-          );
-        }
+    if (!resp.ok) {
+      const contentType = resp.headers.get("content-type") || "";
+      let body = "";
+      try {
+        body = contentType.includes("application/json") ? JSON.stringify(await resp.json()) : await resp.text();
+      } catch (e) {
+        body = "(no se pudo parsear body)";
       }
+      console.error("Error al cargar notificaciones:", resp.status, body);
+      alert("Error al cargar notificaciones");
+      return;
+    }
+
+    const data = await resp.json();
+
+    // Normalizar: backend devuelve { total, page, pageSize, notifications }
+    const items = Array.isArray(data)
+      ? data
+      : Array.isArray(data.notifications)
+      ? data.notifications
+      : Array.isArray(data.items)
+      ? data.items
+      : [];
+
+    // opcional: usar datos de paginación si los necesitas
+    if (typeof data.page === "number") page = data.page;
+    // use data.total, data.pageSize si quieres mostrar contador / paginador
+
+    const leidasSet = getReadSet();
+    notifications = items.map((n) => ({
+      id: n.id_notificacion ?? n.id ?? n.id_cita ?? n.id_notification,
+      id_cita: n.id_cita ?? n.id ?? null,
+      type: mapTipo(n.tipo),
+      title: n.titulo ?? n.title ?? "Notificación",
+      message: n.mensaje ?? n.message ?? "",
+      client: n.nombre_cliente ?? n.client_name ?? "",
+      service: n.nombre_servicio ?? n.service_name ?? "",
+      date: n.fecha_cita ?? n.date ?? null,
+      time: n.hora_inicio ?? n.time ?? null,
+      timestamp: n.timestamp ? new Date(n.timestamp) : new Date(),
+      read: leidasSet.has(n.id_notificacion ?? n.id ?? n.id_cita ?? n.id_notification),
+      actions: getActionsForType(n.tipo),
+    }));
+
+    renderNotifications();
+  } catch (err) {
+    console.error("Error conexión notificaciones:", err);
+    alert("Error de conexión al cargar notificaciones");
+  }
+}
 
       function renderPagination() {
         const container = document.getElementById("pagination");
