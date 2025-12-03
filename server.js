@@ -293,13 +293,13 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 
+
 app.get("/api/auth/perfil", verificarToken, async (req, res) => {
   try {
     const pool = await conectarDB();
     const result = await pool
       .request()
-      .input("id_usuario", mssql.Int, req.usuario.id)
-      .query(`
+      .input("id_usuario", mssql.Int, req.usuario.id).query(`
         SELECT 
           id_usuario,
           nombre,
@@ -318,17 +318,10 @@ app.get("/api/auth/perfil", verificarToken, async (req, res) => {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    const user = result.recordset[0];
-
-    // Si por alguna razón foto_perfil está en forma relativa, la normalizamos a absoluta
-    if (user.foto_perfil && !user.foto_perfil.startsWith("http")) {
-      user.foto_perfil = `${req.protocol}://${req.get("host")}${user.foto_perfil.startsWith("/") ? "" : "/"}${user.foto_perfil}`;
-    }
-
-    return res.json(user);
+    res.json(result.recordset[0]);
   } catch (error) {
     console.error("Error en GET /perfil:", error);
-    return res.status(500).json({ error: "Error interno del servidor" });
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
@@ -377,66 +370,71 @@ app.put("/api/auth/perfil", verificarToken, async (req, res) => {
   }
 });
 
-app.put("/api/auth/perfil/foto", verificarToken, uploadPerfil.single("foto"), async (req, res) => {
-  try {
-    console.log("PUT /api/auth/perfil/foto - req.file:", !!req.file, req.file && req.file.filename);
-
+app.put(
+  "/api/auth/perfil/foto",
+  verificarToken,
+  uploadPerfil.single("foto"),
+  async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "No se recibió ninguna imagen" });
     }
 
-    // Construir URL absoluta (IMPORTANTE: usa req.protocol + host)
-    const nuevaUrlAbsoluta = `${req.protocol}://${req.get("host")}/uploads/fotosdeperfil/${req.file.filename}`;
+    const url_foto = `/uploads/fotosdeperfil/${req.file.filename}`;
 
-    const pool = await conectarDB();
-
-    // Recuperar foto anterior (puede ser relativa o absoluta)
-    const userResult = await pool
-      .request()
-      .input("id_usuario", mssql.Int, req.usuario.id)
-      .query(`SELECT foto_perfil FROM usuarios WHERE id_usuario = @id_usuario`);
-
-    const fotoAnterior = userResult.recordset.length ? userResult.recordset[0].foto_perfil : null;
-
-    // Guardar en BD la URL ABSOLUTA (así el frontend recibe siempre una url válida)
-    await pool
-      .request()
-      .input("id_usuario", mssql.Int, req.usuario.id)
-      .input("foto_perfil", mssql.NVarChar(1000), nuevaUrlAbsoluta)
-      .query(`
-        UPDATE usuarios
-        SET foto_perfil = @foto_perfil
-        WHERE id_usuario = @id_usuario
-      `);
-
-    // Borrar foto anterior si era local (ruta dentro de /uploads)
     try {
-      if (fotoAnterior) {
-        // comprobar si era local (apunta a /uploads/ o contiene host + /uploads/)
-        const localPath = getLocalPathFromUrl(fotoAnterior);
-        if (localPath && fs.existsSync(localPath)) {
-          fs.unlink(localPath, (err) => {
-            if (err) console.warn("No se pudo borrar foto anterior:", err.message);
-            else console.log("Foto anterior borrada:", localPath);
+      const pool = await conectarDB();
+
+      const userResult = await pool
+        .request()
+        .input("id_usuario", mssql.Int, req.usuario.id).query(`
+          SELECT foto_perfil 
+          FROM usuarios 
+          WHERE id_usuario = @id_usuario
+        `);
+
+      const fotoAnterior =
+        userResult.recordset.length > 0
+          ? userResult.recordset[0].foto_perfil
+          : null;
+
+      await pool
+        .request()
+        .input("id_usuario", mssql.Int, req.usuario.id)
+        .input("foto_perfil", mssql.NVarChar(255), url_foto).query(`
+          UPDATE usuarios
+          SET foto_perfil = @foto_perfil
+          WHERE id_usuario = @id_usuario
+        `);
+
+      if (
+        fotoAnterior &&
+        fotoAnterior.startsWith("/uploads/fotosdeperfil/") &&
+        fotoAnterior !== url_foto
+      ) {
+        try {
+          const filePath = path.join(
+            __dirname,
+            fotoAnterior.replace("/uploads/", "uploads/")
+          );
+          fs.unlink(filePath, (err) => {
+            if (err)
+              console.warn("No se pudo borrar foto anterior:", err.message);
           });
-        } else {
-          console.log("Foto anterior no local o no encontrada para borrar:", fotoAnterior);
+        } catch (e) {
+          console.warn("Error al intentar eliminar foto anterior:", e);
         }
       }
-    } catch (e) {
-      console.warn("Error borrando foto anterior:", e);
-    }
 
-    // RESPONDER con la URL absoluta
-    return res.json({
-      mensaje: "Foto de perfil actualizada correctamente",
-      foto_perfil: nuevaUrlAbsoluta,
-    });
-  } catch (error) {
-    console.error("Error al actualizar foto de perfil:", error);
-    return res.status(500).json({ error: "Error interno del servidor" });
+      res.json({
+        mensaje: "Foto de perfil actualizada correctamente",
+        foto_perfil: url_foto,
+      });
+    } catch (error) {
+      console.error("Error al actualizar foto de perfil:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
   }
-});
+);
 
 app.post(
   "/api/catalogo",
