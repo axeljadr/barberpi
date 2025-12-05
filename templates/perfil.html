@@ -486,7 +486,7 @@
         const fotoUrl = user.foto_perfil || "/images/default-avatar.jpg";
         const fotoCompleta = fotoUrl.startsWith("http")
           ? fotoUrl
-          : `http://localhost:4000${fotoUrl}`;
+          : `${API_BASE}${fotoUrl}`;
 
         document.getElementById("profile-picture").src = fotoCompleta;
         document.getElementById("photo-preview").src = fotoCompleta;
@@ -515,7 +515,7 @@
           currentUser.foto_perfil || "/images/default-avatar.jpg";
         const fotoCompleta = fotoActual.startsWith("http")
           ? fotoActual
-          : `http://localhost:4000${fotoActual}`;
+          : `${API_BASE}${fotoActual}`;
         document.getElementById("photo-preview").src = fotoCompleta;
       }
 
