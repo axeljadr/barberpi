@@ -13,7 +13,7 @@
           class="imagen-de-barberia"
           src="/images/barber.jpg"
           alt="Logo Barber Studio"
-        /> 
+        />
       </div>
       <nav
         id="main-nav"
@@ -388,7 +388,7 @@
         currentRol = rol;
 
         if (!token) {
-          alert("Debes iniciar sesión");
+          showToast("Debes iniciar sesión", "info", 4000);
           window.location.href = "/";
           return;
         }
@@ -402,7 +402,11 @@
           });
 
           if (resp.status === 401) {
-            alert("Sesión expirada. Vuelve a iniciar sesión.");
+            showToast(
+              "Sesión expirada. Vuelve a iniciar sesión.",
+              "error",
+              4000
+            );
             localStorage.removeItem("token");
             localStorage.removeItem("rol");
             window.location.href = "/";
@@ -411,7 +415,11 @@
 
           if (!resp.ok) {
             const data = await resp.json().catch(() => ({}));
-            alert(data.error || "No se pudo cargar el perfil");
+            showToast(
+              data.error || "No se pudo cargar el perfil",
+              "error",
+              4000
+            );
             return;
           }
 
@@ -445,7 +453,7 @@
             });
         } catch (err) {
           console.error("Error al cargar perfil:", err);
-          alert("Error de conexión al cargar tu perfil");
+          showToast("Error de conexión al cargar tu perfil", "error", 4000);
         }
       });
 
@@ -475,8 +483,7 @@
         document.getElementById("display-id").textContent =
           user.id_usuario || "-";
 
-        const fotoUrl =
-          user.foto_perfil || "/images/default-avatar.jpg";
+        const fotoUrl = user.foto_perfil || "/images/default-avatar.jpg";
         const fotoCompleta = fotoUrl.startsWith("http")
           ? fotoUrl
           : `http://localhost:4000${fotoUrl}`;
@@ -522,7 +529,7 @@
 
       async function uploadPhoto() {
         if (!selectedPhotoFile) {
-          alert("Por favor, selecciona una imagen primero");
+          showToast("Por favor, selecciona una imagen primero", "info", 4000);
           return;
         }
 
@@ -542,7 +549,7 @@
           const data = await resp.json().catch(() => ({}));
 
           if (!resp.ok) {
-            alert(data.error || "Error al subir la foto");
+            showToast(data.error || "Error al subir la foto", "error", 4000);
             return;
           }
 
@@ -550,17 +557,21 @@
           updateDisplay(currentUser);
 
           closePhotoModal();
-          alert("Foto de perfil actualizada correctamente");
+          showToast(
+            "Foto de perfil actualizada correctamente",
+            "success",
+            4000
+          );
         } catch (err) {
           console.error("Error al subir foto:", err);
-          alert("Error de conexión al subir la foto");
+          showToast("Error de conexión al subir la foto", "error", 4000);
         }
       }
 
       async function saveUserDataToBackend() {
         const token = getToken();
         if (!token) {
-          alert("Debes iniciar sesión");
+          showToast("Debes iniciar sesión", "error", 4000);
           window.location.href = "/";
           return;
         }
@@ -592,7 +603,11 @@
           const data = await resp.json().catch(() => ({}));
 
           if (!resp.ok) {
-            alert(data.error || "No se pudo actualizar el perfil");
+            showToast(
+              data.error || "No se pudo actualizar el perfil",
+              "error",
+              4000
+            );
             return;
           }
 
@@ -609,10 +624,10 @@
             configureRoleFieldByPermission();
           }
 
-          alert("Perfil actualizado correctamente");
+          showToast("Perfil actualizado correctamente", "success", 4000);
         } catch (err) {
           console.error("Error al actualizar perfil:", err);
-          alert("Error de conexión al actualizar el perfil");
+          showToast("Error de conexión al actualizar el perfil", "error", 4000);
         }
       }
 
