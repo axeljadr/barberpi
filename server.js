@@ -24,12 +24,18 @@ app.use(express.urlencoded({ extended: true }));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const fotosPerfilPath = path.join(__dirname, "uploads/fotosdeperfil");
+
+if (!fs.existsSync(fotosPerfilPath)) {
+  fs.mkdirSync(fotosPerfilPath, { recursive: true });
+}
 
 // Servir archivos estáticos
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/static", express.static(path.join(__dirname, "static")));
 app.use("/images", express.static(path.join(__dirname, "images")));
 app.use("/templates", express.static(path.join(__dirname, "templates")));
+app.use("/uploads/fotosdeperfil", express.static(path.join(__dirname, "uploads/fotosdeperfil")));
 
 // Multer storages
 const storage = multer.diskStorage({
